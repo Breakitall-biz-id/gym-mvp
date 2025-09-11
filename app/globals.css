@@ -1,0 +1,135 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Dark slate background with lime-green accents */
+    --background: 15 23 42; /* slate-900 #0f172a */
+    --foreground: 248 250 252; /* slate-50 #f8fafc */
+    --card: 20 25 35; /* darker card background #14191f */
+    --card-foreground: 248 250 252; /* slate-50 */
+    --popover: 20 25 35; /* darker popover #14191f */
+    --popover-foreground: 248 250 252; /* slate-50 */
+    --primary: 211 252 9; /* #D3FC09 - new accent color */
+    --primary-foreground: 15 23 42; /* slate-900 - dark text on lime */
+    --secondary: 51 65 85; /* slate-700 #334155 */
+    --secondary-foreground: 248 250 252; /* slate-50 */
+    --muted: 51 65 85; /* slate-700 #334155 */
+    --muted-foreground: 148 163 184; /* slate-400 #94a3b8 */
+    --accent: 51 65 85; /* slate-700 */
+    --accent-foreground: 248 250 252; /* slate-50 */
+    --destructive: 239 68 68; /* red-500 */
+    --destructive-foreground: 248 250 252; /* slate-50 */
+    --border: 30 35 45; /* subtle border #1e232d */
+    --input: 51 65 85; /* slate-700 */
+    --ring: 211 252 9; /* #D3FC09 - new accent ring */
+    --radius: 0.75rem;
+    --chart-1: 211 252 9; /* #D3FC09 */
+    --chart-2: 180 220 8; /* darker variant */
+    --chart-3: 150 190 7; /* darker variant */
+    --chart-4: 120 160 6; /* darker variant */
+    --chart-5: 90 130 5; /* darker variant */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-slate-900 text-slate-50;
+    background-color: #0f172a !important;
+    color: #f8fafc !important;
+  }
+  
+  /* Force dark theme colors */
+  .bg-background {
+    background-color: #0f172a !important;
+  }
+  
+  .bg-card {
+    background-color: #14191f !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    backdrop-filter: blur(10px);
+  }
+  
+  .bg-muted {
+    background-color: #334155 !important;
+  }
+  
+  .bg-primary {
+    background-color: #D3FC09 !important;
+    color: #0f172a !important;
+  }
+  
+  .text-primary {
+    color: #D3FC09 !important;
+  }
+  
+  .text-foreground {
+    color: #f8fafc !important;
+  }
+  
+  .text-muted-foreground {
+    color: #94a3b8 !important;
+  }
+  
+  .border-border {
+    border-color: rgba(255, 255, 255, 0.05) !important;
+  }
+  
+  /* Modern card styling */
+  .card {
+    background: rgba(20, 25, 31, 0.8) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  }
+  
+  .card:hover {
+    border-color: rgba(211, 252, 9, 0.2) !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+    transition: all 0.2s ease-in-out;
+  }
+  
+  /* Input styling */
+  .input {
+    background: rgba(20, 25, 31, 0.5) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(10px);
+  }
+  
+  .input:focus {
+    border-color: #D3FC09 !important;
+    box-shadow: 0 0 0 2px rgba(211, 252, 9, 0.1) !important;
+  }
+  
+  /* Custom scrollbar for dark theme */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0f172a;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #D3FC09;
+  }
+}
+
+/* Animation classes for QR scanner */
+@layer utilities {
+  .scan-line {
+    animation: scan 2s linear infinite;
+  }
+  
+  @keyframes scan {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(300%); }
+  }
+}
