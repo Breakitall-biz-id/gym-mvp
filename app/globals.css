@@ -1,124 +1,363 @@
+/* Force shadcn/ui Dialog overlay to be semi-transparent for all modals */
+.fixed.inset-0.z-50[data-state="open"]:not([role]) {
+  background: rgba(0, 0, 0, 0.6) !important;
+  backdrop-filter: blur(4px) !important;
+}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* Dark slate background with lime-green accents */
-    --background: 15 23 42; /* slate-900 #0f172a */
-    --foreground: 248 250 252; /* slate-50 #f8fafc */
-    --card: 20 25 35; /* darker card background #14191f */
-    --card-foreground: 248 250 252; /* slate-50 */
-    --popover: 20 25 35; /* darker popover #14191f */
-    --popover-foreground: 248 250 252; /* slate-50 */
-    --primary: 211 252 9; /* #D3FC09 - new accent color */
-    --primary-foreground: 15 23 42; /* slate-900 - dark text on lime */
-    --secondary: 51 65 85; /* slate-700 #334155 */
-    --secondary-foreground: 248 250 252; /* slate-50 */
-    --muted: 51 65 85; /* slate-700 #334155 */
-    --muted-foreground: 148 163 184; /* slate-400 #94a3b8 */
-    --accent: 51 65 85; /* slate-700 */
-    --accent-foreground: 248 250 252; /* slate-50 */
+    /* Clean dark theme without brown colors - neon green restored */
+    --background: 11 11 11; /* Very dark background #0B0B0B */
+    --foreground: 250 250 250; /* Off-white text #FAFAFA */
+    --card: 10 10 10; /* Very dark card background #0A0A0A */
+    --card-foreground: 250 250 250; /* Off-white text on cards */
+    --popover: 24 24 27; /* Dark popover #18181B */
+    --popover-foreground: 250 250 250; /* Off-white text */
+    --primary: 184 255 0; /* Neon green brand color #B8FF00 */
+    --primary-foreground: 11 11 11; /* Dark text on green */
+    --secondary: 55 65 75; /* Cool gray secondary #37414B */
+    --secondary-foreground: 250 250 250; /* Off-white text */
+    --muted: 55 65 75; /* Cool gray background #37414B */
+    --muted-foreground: 156 163 175; /* Gray-400 text #9CA3AF */
+    --accent: 55 65 75; /* Cool gray accent #37414B */
+    --accent-foreground: 250 250 250; /* Off-white text */
     --destructive: 239 68 68; /* red-500 */
-    --destructive-foreground: 248 250 252; /* slate-50 */
-    --border: 30 35 45; /* subtle border #1e232d */
-    --input: 51 65 85; /* slate-700 */
-    --ring: 211 252 9; /* #D3FC09 - new accent ring */
-    --radius: 0.75rem;
-    --chart-1: 211 252 9; /* #D3FC09 */
-    --chart-2: 180 220 8; /* darker variant */
-    --chart-3: 150 190 7; /* darker variant */
-    --chart-4: 120 160 6; /* darker variant */
-    --chart-5: 90 130 5; /* darker variant */
+    --destructive-foreground: 250 250 250; /* Off-white text */
+    --border: 63 63 70; /* Visible border #3F3F46 */
+    --input: 55 65 75; /* Cool gray input background #37414B */
+    --ring: 184 255 0; /* Neon green ring #B8FF00 */
+    --radius: 0.5rem;
+    --chart-1: 184 255 0; /* Neon green #B8FF00 */
+    --chart-2: 147 204 0; /* Darker green variant */
+    --chart-3: 110 153 0; /* Even darker green */
+    --chart-4: 73 102 0; /* Dark green */
+    --chart-5: 36 51 0; /* Very dark green */
+    --sidebar-background: 11 11 11;
+    --sidebar-foreground: 250 250 250;
+    --sidebar-primary: 184 255 0;
+    --sidebar-primary-foreground: 11 11 11;
+    --sidebar-accent: 55 65 75;
+    --sidebar-accent-foreground: 250 250 250;
+    --sidebar-border: 255 255 255;
+    --sidebar-ring: 184 255 0;
+  }
+
+  .dark {
+    --sidebar-background: 11 11 11;
+    --sidebar-foreground: 250 250 250;
+    --sidebar-primary: 184 255 0;
+    --sidebar-primary-foreground: 11 11 11;
+    --sidebar-accent: 55 65 75;
+    --sidebar-accent-foreground: 250 250 250;
+    --sidebar-border: 255 255 255;
+    --sidebar-ring: 184 255 0;
   }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-  
   body {
-    @apply bg-slate-900 text-slate-50;
-    background-color: #0f172a !important;
-    color: #f8fafc !important;
+    background: linear-gradient(120deg, #0b0b0b 0%, #18181b 60%, #0b0b0b 100%)
+      fixed !important;
+    color: #fafafa !important;
+    font-family: "Mona Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
+      Roboto, sans-serif !important;
+    font-weight: 400;
+    font-display: swap;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+    transition: background 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  
-  /* Force dark theme colors */
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: "Mona Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
+      Roboto, sans-serif !important;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  h1 {
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+
+  .font-mono,
+  .font-sans {
+    font-family: "Mona Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
+      Roboto, sans-serif !important;
+  }
+
+  /* Font weight utilities for Mona Sans */
+  .font-light {
+    font-weight: 300;
+  }
+
+  .font-normal {
+    font-weight: 400;
+  }
+
+  .font-medium {
+    font-weight: 500;
+  }
+
+  .font-semibold {
+    font-weight: 600;
+  }
+
+  .font-bold {
+    font-weight: 700;
+  }
+
+  /* Typography utilities */
+  .text-tight {
+    letter-spacing: -0.02em;
+  }
+
+  .text-tighter {
+    letter-spacing: -0.03em;
+  }
+
+  /* Clean dark theme colors matching reference */
   .bg-background {
-    background-color: #0f172a !important;
+    background: linear-gradient(120deg, #0b0b0b 0%, #18181b 60%, #0b0b0b 100%)
+      fixed !important;
   }
-  
+
   .bg-card {
-    background-color: #14191f !important;
-    border: 1px solid rgba(255, 255, 255, 0.05) !important;
-    backdrop-filter: blur(10px);
-  }
-  
-  .bg-muted {
-    background-color: #334155 !important;
-  }
-  
-  .bg-primary {
-    background-color: #D3FC09 !important;
-    color: #0f172a !important;
-  }
-  
-  .text-primary {
-    color: #D3FC09 !important;
-  }
-  
-  .text-foreground {
-    color: #f8fafc !important;
-  }
-  
-  .text-muted-foreground {
-    color: #94a3b8 !important;
-  }
-  
-  .border-border {
-    border-color: rgba(255, 255, 255, 0.05) !important;
-  }
-  
-  /* Modern card styling */
-  .card {
-    background: rgba(20, 25, 31, 0.8) !important;
-    border: 1px solid rgba(255, 255, 255, 0.05) !important;
-    backdrop-filter: blur(10px);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
-  }
-  
-  .card:hover {
-    border-color: rgba(211, 252, 9, 0.2) !important;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
-    transition: all 0.2s ease-in-out;
-  }
-  
-  /* Input styling */
-  .input {
-    background: rgba(20, 25, 31, 0.5) !important;
+    background-color: #0a0a0a !important;
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    backdrop-filter: blur(10px);
   }
-  
+
+  .bg-muted {
+    background-color: #37414b !important;
+  }
+
+  .bg-primary {
+    background-color: #b8ff00 !important;
+    color: #0b0b0b !important;
+  }
+
+  .text-primary {
+    color: #b8ff00 !important;
+  }
+
+  .text-foreground {
+    color: #fafafa !important;
+  }
+
+  .text-muted-foreground {
+    color: #9ca3af !important;
+  }
+
+  .border-border {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  /* Card styling with visible but elegant borders */
+  .card {
+    background: rgba(20, 20, 20, 0.85) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 4px 32px 0 rgba(0, 0, 0, 0.12),
+      0 1.5px 6px 0 rgba(184, 255, 0, 0.04) !important;
+    border-radius: 16px !important;
+    backdrop-filter: blur(8px) !important;
+    transition: box-shadow 0.2s, border-color 0.2s;
+  }
+
+  .card:hover {
+    border-color: #b8ff00 !important;
+    box-shadow: 0 6px 36px 0 rgba(184, 255, 0, 0.1),
+      0 2px 8px 0 rgba(0, 0, 0, 0.16) !important;
+    transition: box-shadow 0.2s, border-color 0.2s;
+  }
+
+  /* Input styling with neon green */
+  .input {
+    background: #37414b !important;
+    border: 1px solid #4b5563 !important;
+    border-radius: 6px !important;
+  }
+
   .input:focus {
-    border-color: #D3FC09 !important;
-    box-shadow: 0 0 0 2px rgba(211, 252, 9, 0.1) !important;
+    border-color: #b8ff00 !important;
+    box-shadow: 0 0 0 2px rgba(184, 255, 0, 0.2) !important;
   }
-  
-  /* Custom scrollbar for dark theme */
+
+  /* Custom scrollbar matching reference */
   ::-webkit-scrollbar {
     width: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #0f172a;
+    background: #0b0b0b;
   }
   ::-webkit-scrollbar-thumb {
-    background: #334155;
+    background: #4b5563;
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #D3FC09;
+    background: #6b7280;
+  }
+
+  /* Button styling with neon green */
+  .btn-primary {
+    background: #b8ff00 !important;
+    color: #0b0b0b !important;
+    border: none !important;
+    border-radius: 6px !important;
+  }
+
+  .btn-primary:hover {
+    background: #a3e600 !important;
+    transition: background-color 0.2s ease;
+  }
+
+  /* Header styling - clean */
+  .dashboard-header {
+    background: rgba(11, 11, 11, 0.85) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    backdrop-filter: blur(12px) !important;
+  }
+
+  /* Sidebar styling - clean */
+  .sidebar {
+    background: rgba(11, 11, 11, 0.85) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
+    backdrop-filter: blur(12px) !important;
+  }
+
+  /* Override any remaining accent colors */
+  [data-state="selected"] {
+    background-color: #37414b !important;
+  }
+
+  /* Force dropdown/select colors */
+  [role="option"]:focus,
+  [role="menuitem"]:focus,
+  [data-highlighted] {
+    background-color: #37414b !important;
+    color: #fafafa !important;
+  }
+
+  /* Force table row hover */
+  tbody tr:hover {
+    background-color: rgba(55, 65, 75, 0.5) !important;
+  }
+
+  /* Force all accent background colors */
+  .bg-accent {
+    background-color: #37414b !important;
+  }
+
+  .text-accent-foreground {
+    color: #fafafa !important;
+  }
+
+  /* Force muted colors everywhere */
+  .bg-muted {
+    background-color: #37414b !important;
+  }
+
+  .bg-muted\/50 {
+    background-color: rgba(55, 65, 75, 0.5) !important;
+  }
+
+  /* Ensure primary colors are neon green */
+  .text-primary,
+  .border-primary {
+    color: #b8ff00 !important;
+    border-color: #b8ff00 !important;
+  }
+
+  /* Override Radix UI focus states */
+  [data-radix-collection-item]:focus,
+  [data-radix-collection-item]:hover,
+  [data-state="open"] {
+    background-color: #37414b !important;
+    color: #fafafa !important;
+  }
+
+  /* Force select dropdown item colors */
+  [role="option"] {
+    background-color: transparent !important;
+  }
+
+  [role="option"]:hover,
+  [role="option"][data-highlighted] {
+    background-color: #37414b !important;
+    color: #fafafa !important;
+  }
+
+  /* Override any Tailwind zinc colors */
+  .bg-zinc-800 {
+    background-color: #37414b !important;
+  }
+
+  .bg-zinc-900 {
+    background-color: #18181b !important;
+  }
+
+  .bg-zinc-700 {
+    background-color: #4b5563 !important;
+  }
+
+  .text-zinc-400 {
+    color: #9ca3af !important;
+  }
+
+  /* Clean table styling */
+  table {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    background: transparent !important;
+    border-radius: 12px !important;
+    overflow: hidden !important;
+  }
+
+  /* Subtle table borders - reduced contrast */
+  table th,
+  table td {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-top: none !important;
+    background: transparent !important;
+  }
+
+  /* Subtle table header */
+  thead tr {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    background: rgba(20, 20, 20, 0.85) !important;
+  }
+
+  /* Remove last row border */
+  tbody tr:last-child td {
+    border-bottom: none !important;
+  }
+
+  /* Subtle but visible card headers */
+  .card-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+
+  /* Clean inputs */
+  input[type="text"],
+  input[type="search"] {
+    background: rgba(255, 255, 255, 0.02) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+
+  input[type="text"]:focus,
+  input[type="search"]:focus {
+    border-color: rgba(184, 255, 0, 0.3) !important;
+    box-shadow: 0 0 0 2px rgba(184, 255, 0, 0.1) !important;
   }
 }
 
@@ -127,9 +366,15 @@
   .scan-line {
     animation: scan 2s linear infinite;
   }
-  
+
   @keyframes scan {
-    0% { transform: translateY(-100%); }
-    100% { transform: translateY(300%); }
+    0% {
+      transform: translateY(-100%);
+    }
+    100% {
+      transform: translateY(300%);
+    }
   }
 }
+
+/* Clean base styles without @apply */

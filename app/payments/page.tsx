@@ -1,114 +1,381 @@
-import { createClient } from '@/lib/supabase/server'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { DollarSign, TrendingUp, Calendar, Plus } from 'lucide-react'
-import { Payment } from '@/lib/types'
+"use client";
 
-async function getPaymentStats() {
-  const supabase = createClient()
-  
-  // Get this month's payments
-  const now = new Date()
-  const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-  const lastOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+import { createClient } from "@/lib/supabase/client";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DollarSign, TrendingUp, Calendar, Plus } from "lucide-react";
+import { Payment, Member } from "@/lib/types";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { useState, useEffect } from "react";
 
-  const { data: thisMonthPayments } = await supabase
-    .from('payments')
-    .select('amount_cents')
-    .eq('status', 'paid')
-    .gte('paid_at', firstOfMonth.toISOString())
-    .lte('paid_at', lastOfMonth.toISOString())
+export default function PaymentsPage() {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [stats, setStats] = useState<any>({
+    thisMonthTotal: 0,
+    lastMonthTotal: 0,
+    growth: 0,
+  });
+  const [members, setMembers] = useState<Member[]>([]);
 
-  const thisMonthTotal = thisMonthPayments?.reduce((sum, payment) => sum + payment.amount_cents, 0) || 0
+  // Form state
+  const [form, setForm] = useState({
+    member_id: "",
+    subscription_id: "manual",
+    amount_cents: "",
+    method: "cash",
+    status: "paid",
+    paid_at: new Date().toISOString().slice(0, 10),
+    notes: "",
+  });
 
-  // Get last month's total for comparison
-  const firstOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-  const lastOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0)
+  // Subscriptions for selected member
+  const [memberSubscriptions, setMemberSubscriptions] = useState<any[]>([]);
 
-  const { data: lastMonthPayments } = await supabase
-    .from('payments')
-    .select('amount_cents')
-    .eq('status', 'paid')
-    .gte('paid_at', firstOfLastMonth.toISOString())
-    .lte('paid_at', lastOfLastMonth.toISOString())
+  useEffect(() => {
+    fetchPayments();
+    fetchStats();
+    fetchMembers();
+  }, []);
 
-  const lastMonthTotal = lastMonthPayments?.reduce((sum, payment) => sum + payment.amount_cents, 0) || 0
+  const fetchPayments = async () => {
+    const res = await fetch("/api/payments");
+    const data = await res.json();
+    setPayments(data.payments || []);
+  };
+  const fetchStats = async () => {
+    const res = await fetch("/api/payments-stats");
+    const data = await res.json();
+    setStats(data.stats || { thisMonthTotal: 0, lastMonthTotal: 0, growth: 0 });
+  };
+  const fetchMembers = async () => {
+    const res = await fetch("/api/members?limit=1000");
+    const data = await res.json();
+    setMembers(data.members || []);
+  };
 
-  return {
-    thisMonthTotal: thisMonthTotal / 100,
-    lastMonthTotal: lastMonthTotal / 100,
-    growth: lastMonthTotal > 0 ? ((thisMonthTotal - lastMonthTotal) / lastMonthTotal) * 100 : 0
-  }
-}
 
-async function getRecentPayments(): Promise<Payment[]> {
-  const supabase = createClient()
+  const handleFormChange = (e: any) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
-  const { data: payments } = await supabase
-    .from('payments')
-    .select(`
-      *,
-      member:members(
-        id,
-        full_name,
-        photo_url
-      ),
-      subscription:subscriptions(
-        id,
-        membership_plan:membership_plans(name)
-      )
-    `)
-    .order('created_at', { ascending: false })
-    .limit(20)
+  // Fetch subscriptions when member changes
+  useEffect(() => {
+    if (form.member_id) {
+      fetch(`/api/subscriptions?member_id=${form.member_id}`)
+        .then((res) => res.json())
+        .then((data) => setMemberSubscriptions(data.data || []));
+    } else {
+      setMemberSubscriptions([]);
+    }
+    // Reset subscription_id if member changes
+    setForm((f) => ({ ...f, subscription_id: "manual" }));
+  }, [form.member_id]);
 
-  return payments || []
-}
+  const handleSelectChange = (name: string, value: string) => {
+    setForm({ ...form, [name]: value });
+  };
 
-export default async function PaymentsPage() {
-  const stats = await getPaymentStats()
-  const payments = await getRecentPayments()
+  const handleSubmit = async (e: any) => {
+    e.preventDefault();
+    setLoading(true);
+    const payload = {
+      ...form,
+      subscription_id: form.subscription_id === "manual" ? null : form.subscription_id,
+      amount_cents: parseInt(form.amount_cents, 10),
+      paid_at: form.paid_at ? new Date(form.paid_at).toISOString() : null,
+    };
+    const res = await fetch("/api/payments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    setLoading(false);
+    if (res.ok) {
+      setOpen(false);
+      setForm({
+        member_id: "",
+        subscription_id: "",
+        amount_cents: "",
+        method: "cash",
+        status: "paid",
+        paid_at: new Date().toISOString().slice(0, 10),
+        notes: "",
+      });
+      fetchPayments();
+      fetchStats();
+    } else {
+      alert("Failed to add payment");
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'paid':
-        return <Badge className="bg-green-600 hover:bg-green-700">Paid</Badge>
-      case 'pending':
-        return <Badge variant="outline" className="text-orange-500 border-orange-500">Pending</Badge>
-      case 'failed':
-        return <Badge variant="destructive">Failed</Badge>
-      case 'refunded':
-        return <Badge variant="secondary">Refunded</Badge>
+      case "paid":
+        return <Badge className="bg-green-600 hover:bg-green-700">Paid</Badge>;
+      case "pending":
+        return (
+          <Badge
+            variant="outline"
+            className="text-yellow-500 border-yellow-500"
+          >
+            Pending
+          </Badge>
+        );
+      case "failed":
+        return <Badge variant="destructive">Failed</Badge>;
+      case "refunded":
+        return <Badge variant="secondary">Refunded</Badge>;
       default:
-        return <Badge variant="secondary">{status}</Badge>
+        return <Badge variant="secondary">{status}</Badge>;
     }
+  };
+
+  function formatRupiah(num: string | number) {
+    const n = typeof num === "string" ? Number(num.replace(/[^\d]/g, "")) : num;
+    return n ? "Rp " + n.toLocaleString("id-ID") : "";
   }
 
   const getMethodBadge = (method: string) => {
     switch (method) {
-      case 'cash':
-        return <Badge variant="outline">Cash</Badge>
-      case 'transfer':
-        return <Badge variant="outline">Transfer</Badge>
-      case 'ewallet':
-        return <Badge variant="outline">E-Wallet</Badge>
+      case "cash":
+        return <Badge variant="outline">Cash</Badge>;
+      case "transfer":
+        return <Badge variant="outline">Transfer</Badge>;
+      case "ewallet":
+        return <Badge variant="outline">E-Wallet</Badge>;
       default:
-        return <Badge variant="outline">{method}</Badge>
+        return <Badge variant="outline">{method}</Badge>;
     }
-  }
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Payments</h1>
-          <p className="text-muted-foreground">Track and manage member payments</p>
+          <p className="text-muted-foreground">
+            Track and manage member payments
+          </p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Record Payment
-        </Button>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Record Payment
+            </Button>
+          </DialogTrigger>
+          <DialogContent
+            className="sm:max-w-[420px] rounded-2xl p-0 overflow-hidden"
+            style={{
+              background: "rgba(255,255,255,0.30)",
+              backdropFilter: "blur(16px)",
+              WebkitBackdropFilter: "blur(16px)",
+              border: "1.5px solid rgba(255,255,255,0.10)",
+              boxShadow:
+                "0 8px 40px 0 rgba(0,0,0,0.18), 0 2px 8px 0 rgba(184,255,0,0.06)",
+            }}
+          >
+            <DialogHeader className="px-8 pt-8 pb-2">
+              <DialogTitle className="text-2xl font-bold text-white flex items-center gap-2 drop-shadow">
+                Record Payment
+              </DialogTitle>
+              <DialogDescription className="text-gray-300 text-base">
+                Add a new payment for a member.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-8 px-8 pb-8 pt-2">
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="member_id" className="text-white">
+                    Member *
+                  </Label>
+                  <Select
+                    value={form.member_id}
+                    onValueChange={(v) => handleSelectChange("member_id", v)}
+                  >
+                    <SelectTrigger
+                      id="member_id"
+                      className="bg-white/30 border-white/20 text-white focus:ring-primary/30 shadow-sm"
+                    >
+                      <SelectValue placeholder="Select member" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {members.map((m) => (
+                        <SelectItem key={m.id} value={m.id}>
+                          {m.full_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {/* Subscription dropdown, only show if member selected */}
+                {form.member_id && (
+                  <div className="space-y-2">
+                    <Label htmlFor="subscription_id" className="text-white">
+                      Subscription
+                    </Label>
+                    <Select
+                      value={form.subscription_id}
+                      onValueChange={(v) => handleSelectChange("subscription_id", v)}
+                    >
+                      <SelectTrigger
+                        id="subscription_id"
+                        className="bg-white/30 border-white/20 text-white focus:ring-primary/30 shadow-sm"
+                      >
+                        <SelectValue placeholder="Manual Payment (no subscription)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="manual">Manual Payment (no subscription)</SelectItem>
+                        {memberSubscriptions.map((sub) => (
+                          <SelectItem key={sub.id} value={sub.id}>
+                            {sub.membership_plan?.name || "Plan"} ({sub.status})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <Label htmlFor="amount_cents" className="text-white">
+                    Amount (Rupiah) *
+                  </Label>
+                  <Input
+                    id="amount_cents"
+                    name="amount_cents"
+                    value={formatRupiah(form.amount_cents)}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        amount_cents: e.target.value.replace(/[^\d]/g, ""),
+                      })
+                    }
+                    placeholder="e.g. 150000"
+                    inputMode="numeric"
+                    required
+                    className="bg-white/30 border-white/20 text-white placeholder:text-gray-400 focus:ring-primary/30 shadow-sm"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <div className="flex-1 space-y-2">
+                    <Label htmlFor="method" className="text-white">
+                      Method *
+                    </Label>
+                    <Select
+                      value={form.method}
+                      onValueChange={(v) => handleSelectChange("method", v)}
+                    >
+                      <SelectTrigger
+                        id="method"
+                        className="bg-white/30 border-white/20 text-white focus:ring-primary/30 shadow-sm"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cash">Cash</SelectItem>
+                        <SelectItem value="transfer">Transfer</SelectItem>
+                        <SelectItem value="ewallet">E-Wallet</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <Label htmlFor="status" className="text-white">
+                      Status *
+                    </Label>
+                    <Select
+                      value={form.status}
+                      onValueChange={(v) => handleSelectChange("status", v)}
+                    >
+                      <SelectTrigger
+                        id="status"
+                        className="bg-white/30 border-white/20 text-white focus:ring-primary/30 shadow-sm"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="paid">Paid</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="failed">Failed</SelectItem>
+                        <SelectItem value="refunded">Refunded</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="paid_at" className="text-white">
+                    Paid At *
+                  </Label>
+                  <Input
+                    id="paid_at"
+                    name="paid_at"
+                    type="date"
+                    value={form.paid_at}
+                    onChange={handleFormChange}
+                    required
+                    className="bg-white/30 border-white/20 text-white placeholder:text-gray-400 focus:ring-primary/30 shadow-sm"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="notes" className="text-white">
+                    Notes
+                  </Label>
+                  <Input
+                    id="notes"
+                    name="notes"
+                    value={form.notes}
+                    onChange={handleFormChange}
+                    placeholder="(optional)"
+                    className="bg-white/30 border-white/20 text-white placeholder:text-gray-400 focus:ring-primary/30 shadow-sm"
+                  />
+                </div>
+              </div>
+              <DialogFooter className="pt-4 flex justify-end gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setOpen(false)}
+                  disabled={loading}
+                  className="rounded-lg border-white/20 bg-white/10 hover:bg-primary/10 text-white shadow"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="rounded-lg bg-primary text-black font-bold shadow-md hover:bg-primary/90"
+                >
+                  {loading ? "Saving..." : "Save Payment"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Stats Cards */}
@@ -149,12 +416,15 @@ export default async function PaymentsPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${stats.growth >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-              {stats.growth >= 0 ? '+' : ''}{stats.growth.toFixed(1)}%
+            <div
+              className={`text-2xl font-bold ${
+                stats.growth >= 0 ? "text-green-500" : "text-red-500"
+              }`}
+            >
+              {stats.growth >= 0 ? "+" : ""}
+              {stats.growth.toFixed(1)}%
             </div>
-            <p className="text-xs text-muted-foreground">
-              Month over month
-            </p>
+            <p className="text-xs text-muted-foreground">Month over month</p>
           </CardContent>
         </Card>
       </div>
@@ -173,19 +443,30 @@ export default async function PaymentsPage() {
           ) : (
             <div className="space-y-4">
               {payments.map((payment: any) => (
-                <div key={payment.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                <div
+                  key={payment.id}
+                  className="flex items-center justify-between p-4 bg-muted/50 rounded-lg"
+                >
                   <div className="flex items-center gap-4">
                     <Avatar>
-                      <AvatarImage src={payment.member?.photo_url || ''} />
+                      <AvatarImage src={payment.member?.photo_url || ""} />
                       <AvatarFallback>
-                        {payment.member?.full_name?.split(' ').map((n: string) => n[0]).join('') || 'N/A'}
+                        {payment.member?.full_name
+                          ?.split(" ")
+                          .map((n: string) => n[0])
+                          .join("") || "N/A"}
                       </AvatarFallback>
                     </Avatar>
-                    
+
                     <div>
-                      <p className="font-medium">{payment.member?.full_name || 'Unknown Member'}</p>
+                      <p className="font-medium">
+                        {payment.member?.full_name || "Unknown Member"}
+                      </p>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span>{payment.subscription?.membership_plan?.name || 'Manual Payment'}</span>
+                        <span>
+                          {payment.subscription?.membership_plan?.name ||
+                            "Manual Payment"}
+                        </span>
                         {payment.notes && (
                           <>
                             <span>•</span>
@@ -198,12 +479,16 @@ export default async function PaymentsPage() {
 
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <p className="font-semibold">${(payment.amount_cents / 100).toFixed(2)}</p>
+                      <p className="font-semibold">
+                        {formatRupiah(payment.amount_cents)}
+                      </p>
                       <p className="text-sm text-muted-foreground">
-                        {new Date(payment.paid_at || payment.created_at).toLocaleDateString()}
+                        {new Date(
+                          payment.paid_at || payment.created_at
+                        ).toLocaleDateString()}
                       </p>
                     </div>
-                    
+
                     <div className="flex flex-col gap-1">
                       {getStatusBadge(payment.status)}
                       {getMethodBadge(payment.method)}
@@ -216,5 +501,5 @@ export default async function PaymentsPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

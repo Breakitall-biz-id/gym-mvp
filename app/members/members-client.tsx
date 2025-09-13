@@ -1,179 +1,212 @@
-'use client'
+"use client";
 
-import { useState, useMemo } from 'react'
-import { Member } from '@/lib/types'
-import { Card, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Search, MoreHorizontal, Phone, Mail, QrCode, Eye } from 'lucide-react'
+import { useState, useMemo, useCallback } from "react";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import Link from 'next/link'
+} from "@/components/ui/dropdown-menu";
+import {
+  Search,
+  MoreHorizontal,
+  Phone,
+  Mail,
+  Eye,
+  Edit,
+  RefreshCw,
+} from "lucide-react";
+import { Member } from "@/lib/types";
+import { MemberDialog } from "@/components/members/member-dialog";
+import { MemberDetailDialog } from "@/components/members/member-detail-dialog";
+import { useDebounce } from "@/hooks/use-members";
+import { useRouter } from "next/navigation";
 
 interface MembersClientProps {
-  members: Member[]
+  members: Member[];
 }
 
-export function MembersClient({ members }: MembersClientProps) {
-  const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
+export function MembersClient({ members: initialMembers }: MembersClientProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [members, setMembers] = useState(initialMembers);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const router = useRouter();
 
+  // Debounce search query untuk optimasi performa
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
+  // Memoize filtered members untuk performa
   const filteredMembers = useMemo(() => {
-    return members.filter(member => {
-      const matchesSearch = member.full_name.toLowerCase().includes(search.toLowerCase()) ||
-                          member.phone?.toLowerCase().includes(search.toLowerCase()) ||
-                          member.email?.toLowerCase().includes(search.toLowerCase())
+    if (!debouncedSearchQuery) return members;
 
-      if (!matchesSearch) return false
+    const query = debouncedSearchQuery.toLowerCase();
+    return members.filter(
+      (member) =>
+        member.full_name.toLowerCase().includes(query) ||
+        member.email?.toLowerCase().includes(query) ||
+        member.phone?.includes(query)
+    );
+  }, [members, debouncedSearchQuery]);
 
-      if (statusFilter === 'active') {
-        return member.active_subscription !== null
-      } else if (statusFilter === 'expired') {
-        return member.active_subscription === null
-      } else if (statusFilter === 'expiring') {
-        const nextWeek = new Date()
-        nextWeek.setDate(nextWeek.getDate() + 7)
-        return member.active_subscription && 
-               new Date(member.active_subscription.end_date) <= nextWeek &&
-               new Date(member.active_subscription.end_date) >= new Date()
-      }
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      router.refresh();
+    } finally {
+      // Set timeout to show loading state briefly
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
+  }, [router]);
 
-      return true
-    })
-  }, [members, search, statusFilter])
+  const handleMemberUpdate = useCallback(() => {
+    handleRefresh();
+  }, [handleRefresh]);
 
   const getStatusBadge = (member: Member) => {
-    if (!member.active_subscription) {
-      return <Badge variant="secondary">Expired</Badge>
+    const subscription = member.active_subscription;
+    if (!subscription) {
+      return <Badge variant="outline">No Subscription</Badge>;
     }
 
-    const endDate = new Date(member.active_subscription.end_date)
-    const today = new Date()
-    const nextWeek = new Date()
-    nextWeek.setDate(nextWeek.getDate() + 7)
+    const endDate = new Date(subscription.end_date);
+    const today = new Date();
+    const daysLeft = Math.ceil(
+      (endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+    );
 
-    if (endDate < today) {
-      return <Badge variant="secondary">Expired</Badge>
-    } else if (endDate <= nextWeek) {
-      return <Badge variant="outline" className="text-orange-500 border-orange-500">Expiring</Badge>
+    if (daysLeft < 0) {
+      return <Badge variant="destructive">Expired</Badge>;
+    } else if (daysLeft <= 7) {
+      return (
+        <Badge variant="outline" className="border-yellow-400 text-yellow-400">
+          Expiring Soon
+        </Badge>
+      );
     } else {
-      return <Badge className="bg-green-600 hover:bg-green-700">Active</Badge>
+      return <Badge variant="default">Active</Badge>;
     }
-  }
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Filters */}
-      <div className="flex gap-4 flex-col sm:flex-row">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+    <div className="space-y-4">
+      {/* Search and Actions */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="relative max-w-sm flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search members..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
           />
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Members</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="expired">Expired</SelectItem>
-            <SelectItem value="expiring">Expiring Soon</SelectItem>
-          </SelectContent>
-        </Select>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className="shrink-0"
+        >
+          <RefreshCw
+            className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`}
+          />
+          Refresh
+        </Button>
       </div>
 
       {/* Members Grid */}
-      {filteredMembers.length === 0 ? (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <p className="text-muted-foreground">No members found matching your criteria.</p>
-            <Button asChild className="mt-4">
-              <Link href="/members/new">Add First Member</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredMembers.map((member) => (
-            <Card key={member.id} className="hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3 flex-1">
-                    <Avatar className="h-12 w-12">
-                      <AvatarImage src={member.photo_url || ''} />
-                      <AvatarFallback>
-                        {member.full_name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-semibold truncate">{member.full_name}</h3>
-                      <div className="text-sm text-muted-foreground space-y-1">
-                        {member.phone && (
-                          <div className="flex items-center gap-1">
-                            <Phone className="h-3 w-3" />
-                            {member.phone}
-                          </div>
-                        )}
-                        {member.email && (
-                          <div className="flex items-center gap-1">
-                            <Mail className="h-3 w-3" />
-                            {member.email}
-                          </div>
-                        )}
-                      </div>
-                    </div>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {filteredMembers.map((member) => (
+          <Card key={member.id} className="hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Avatar>
+                  <AvatarImage src={member.photo_url || ""} />
+                  <AvatarFallback>
+                    {member.full_name
+                      .split(" ")
+                      .map((n: string) => n[0])
+                      .join("")
+                      .toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-medium truncate">{member.full_name}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Joined {new Date(member.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2 mb-4">
+                {member.email && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Mail className="h-4 w-4" />
+                    <span className="truncate">{member.email}</span>
                   </div>
-                  
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem asChild>
-                        <Link href={`/members/${member.id}`}>
+                )}
+                {member.phone && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Phone className="h-4 w-4" />
+                    <span>{member.phone}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between">
+                {getStatusBadge(member)}
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <MemberDetailDialog
+                      member={member}
+                      onSuccess={handleMemberUpdate}
+                      trigger={
+                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                           <Eye className="h-4 w-4 mr-2" />
                           View Details
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href={`/members/${member.id}/qr`}>
-                          <QrCode className="h-4 w-4 mr-2" />
-                          Generate QR
-                        </Link>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+                        </DropdownMenuItem>
+                      }
+                    />
+                    <MemberDialog
+                      member={member}
+                      mode="edit"
+                      onSuccess={handleMemberUpdate}
+                      trigger={
+                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit Member
+                        </DropdownMenuItem>
+                      }
+                    />
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
-                <div className="mt-4 space-y-2">
-                  {getStatusBadge(member)}
-                  
-                  {member.active_subscription && (
-                    <div className="text-sm text-muted-foreground">
-                      <p>{member.active_subscription.membership_plan?.name}</p>
-                      <p>Expires: {new Date(member.active_subscription.end_date).toLocaleDateString()}</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+      {filteredMembers.length === 0 && (
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">
+            {searchQuery
+              ? "No members found matching your search"
+              : "No members found"}
+          </p>
         </div>
       )}
     </div>
-  )
+  );
 }

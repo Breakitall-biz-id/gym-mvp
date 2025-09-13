@@ -1,0 +1,74 @@
+[
+  {
+    "id": 1,
+    "header": "Member Registration System",
+    "type": "Core Feature",
+    "status": "Done",
+    "target": "100",
+    "limit": "unlimited",
+    "reviewer": "Admin Manager"
+  },
+  {
+    "id": 2,
+    "header": "QR Code Check-in",
+    "type": "Check-in System",
+    "status": "Done",
+    "target": "50/day",
+    "limit": "daily",
+    "reviewer": "Staff Manager"
+  },
+  {
+    "id": 3,
+    "header": "Membership Plans",
+    "type": "Subscription",
+    "status": "Done",
+    "target": "5",
+    "limit": "active",
+    "reviewer": "Admin Manager"
+  },
+  {
+    "id": 4,
+    "header": "Payment Tracking",
+    "type": "Financial",
+    "status": "In Progress",
+    "target": "$5000",
+    "limit": "monthly",
+    "reviewer": "Finance Manager"
+  },
+  {
+    "id": 5,
+    "header": "Attendance Reports",
+    "type": "Analytics",
+    "status": "In Progress",
+    "target": "daily",
+    "limit": "automated",
+    "reviewer": "Data Analyst"
+  },
+  {
+    "id": 6,
+    "header": "Member Portal",
+    "type": "User Interface",
+    "status": "Done",
+    "target": "mobile",
+    "limit": "responsive",
+    "reviewer": "UX Designer"
+  },
+  {
+    "id": 7,
+    "header": "Notification System",
+    "type": "Communication",
+    "status": "Not Started",
+    "target": "email/sms",
+    "limit": "bulk",
+    "reviewer": "Assign reviewer"
+  },
+  {
+    "id": 8,
+    "header": "Equipment Management",
+    "type": "Inventory",
+    "status": "Not Started",
+    "target": "tracking",
+    "limit": "real-time",
+    "reviewer": "Assign reviewer"
+  }
+]
