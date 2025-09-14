@@ -3,8 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('SUPABASE_URL', process.env.NEXT_PUBLIC_SUPABASE_URL)
-    console.log('SUPABASE_KEY', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+    console.log("SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL);
+    console.log("SUPABASE_KEY", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
     const supabase = createClient();
 
     // Total members
@@ -12,7 +12,10 @@ export async function GET(request: NextRequest) {
       .from("members")
       .select("id", { count: "exact", head: true });
     if (membersErr) {
-      return NextResponse.json({ success: false, error: 'membersErr', details: membersErr }, { status: 500 });
+      return NextResponse.json(
+        { success: false, error: "membersErr", details: membersErr },
+        { status: 500 }
+      );
     }
 
     // Active subscriptions
@@ -21,7 +24,10 @@ export async function GET(request: NextRequest) {
       .select("id", { count: "exact", head: true })
       .eq("status", "active");
     if (activeSubsErr) {
-      return NextResponse.json({ success: false, error: 'activeSubsErr', details: activeSubsErr }, { status: 500 });
+      return NextResponse.json(
+        { success: false, error: "activeSubsErr", details: activeSubsErr },
+        { status: 500 }
+      );
     }
 
     // Expiring soon (next 7 days)
@@ -35,7 +41,10 @@ export async function GET(request: NextRequest) {
       .gte("end_date", today.toISOString().split("T")[0])
       .lte("end_date", nextWeek.toISOString().split("T")[0]);
     if (expSoonErr) {
-      return NextResponse.json({ success: false, error: 'expSoonErr', details: expSoonErr }, { status: 500 });
+      return NextResponse.json(
+        { success: false, error: "expSoonErr", details: expSoonErr },
+        { status: 500 }
+      );
     }
 
     // Today's check-ins
@@ -46,7 +55,10 @@ export async function GET(request: NextRequest) {
       .gte("checked_in_at", todayStr + "T00:00:00")
       .lte("checked_in_at", todayStr + "T23:59:59");
     if (todayCheckinErr) {
-      return NextResponse.json({ success: false, error: 'todayCheckinErr', details: todayCheckinErr }, { status: 500 });
+      return NextResponse.json(
+        { success: false, error: "todayCheckinErr", details: todayCheckinErr },
+        { status: 500 }
+      );
     }
 
     // Monthly revenue (current month, paid only)
@@ -58,9 +70,12 @@ export async function GET(request: NextRequest) {
       .gte("paid_at", firstOfMonth.toISOString())
       .lte("paid_at", today.toISOString());
     if (paymentsErr) {
-      return NextResponse.json({ success: false, error: 'paymentsErr', details: paymentsErr }, { status: 500 });
+      return NextResponse.json(
+        { success: false, error: "paymentsErr", details: paymentsErr },
+        { status: 500 }
+      );
     }
-    console.log('payments', payments);
+    console.log("payments", payments);
     const monthlyRevenue = (payments || []).reduce(
       (sum, p) => sum + (p.amount_cents || 0),
       0
@@ -80,9 +95,12 @@ export async function GET(request: NextRequest) {
       .gte("checked_in_at", startDateStr + "T00:00:00")
       .lte("checked_in_at", endDateStr + "T23:59:59");
     if (checkinAggErr) {
-      return NextResponse.json({ success: false, error: 'checkinAggErr', details: checkinAggErr }, { status: 500 });
+      return NextResponse.json(
+        { success: false, error: "checkinAggErr", details: checkinAggErr },
+        { status: 500 }
+      );
     }
-    console.log('checkinAgg', checkinAgg);
+    console.log("checkinAgg", checkinAgg);
 
     // Group registrations by date
     const { data: regAgg, error: regAggErr } = await supabase
@@ -91,9 +109,12 @@ export async function GET(request: NextRequest) {
       .gte("created_at", startDateStr + "T00:00:00")
       .lte("created_at", endDateStr + "T23:59:59");
     if (regAggErr) {
-      return NextResponse.json({ success: false, error: 'regAggErr', details: regAggErr }, { status: 500 });
+      return NextResponse.json(
+        { success: false, error: "regAggErr", details: regAggErr },
+        { status: 500 }
+      );
     }
-    console.log('regAgg', regAgg);
+    console.log("regAgg", regAgg);
 
     // Aggregate counts per day in JS
     const checkinMap = new Map();
@@ -135,9 +156,12 @@ export async function GET(request: NextRequest) {
       .select("checked_in_at")
       .gte("checked_in_at", checkinTimeStartStr);
     if (checkinTimesErr) {
-      return NextResponse.json({ success: false, error: 'checkinTimesErr', details: checkinTimesErr }, { status: 500 });
+      return NextResponse.json(
+        { success: false, error: "checkinTimesErr", details: checkinTimesErr },
+        { status: 500 }
+      );
     }
-    console.log('checkinTimes', checkinTimes);
+    console.log("checkinTimes", checkinTimes);
 
     // Aggregate per hour (0-23)
     const hourDist: number[] = Array(24).fill(0);
@@ -153,11 +177,12 @@ export async function GET(request: NextRequest) {
       .select("plan_id, membership_plans(name)")
       .eq("status", "active");
     if (planAggErr) {
-      return NextResponse.json({ success: false, error: 'planAggErr', details: planAggErr }, { status: 500 });
+      return NextResponse.json(
+        { success: false, error: "planAggErr", details: planAggErr },
+        { status: 500 }
+      );
     }
-    console.log('planAgg', planAgg);
-
-
+    console.log("planAgg", planAgg);
 
     const planCountMap = new Map();
     (planAgg || []).forEach((row) => {
