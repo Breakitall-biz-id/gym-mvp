@@ -19,6 +19,10 @@ const qrOptions = [
     token: "qr_043ioujofkd9834b7d89733efbcfbab7dc2b4d2",
     name: "Muhammad Ihsan Sy",
   },
+  {
+    token: "qr_c3cfd1b6-bc17-4b00-8c9c-baedc93159ac",
+    name: "Budi"
+  }
 ];
 
 export default function MemberScan() {

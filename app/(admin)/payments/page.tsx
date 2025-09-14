@@ -119,7 +119,6 @@ export default function PaymentsPage() {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
-    // Validation: if subscription selected, amount must match plan price
     if (form.subscription_id && form.subscription_id !== "manual") {
       const sub = memberSubscriptions.find(
         (s) => s.id === form.subscription_id
@@ -172,6 +171,15 @@ export default function PaymentsPage() {
               status: "active",
               start_date: startDate,
               end_date: endDate.toISOString().slice(0, 10),
+            }),
+          });
+
+          await fetch("/api/qr-tokens", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              member_id: sub.member_id,
+              expires_at: endDate.toISOString(),
             }),
           });
         }
