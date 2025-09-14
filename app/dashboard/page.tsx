@@ -1,3 +1,4 @@
+"use client";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
@@ -8,129 +9,118 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
+
   CardTitle,
 } from "@/components/ui/card";
 
+
 import { ChartAreaInteractive } from "@/components/gym-chart";
+import { CheckinHourRadarChart } from "@/components/dashboard/checkin-hour-radar-chart";
+import { TopPlansBarChart } from "@/components/dashboard/top-plans-bar-chart";
 import { DataTableDemo } from "@/components/gym-data-table";
-import gymData from "./data.json";
-import { DashboardStats } from "@/components/dashboard/dashboard-stats";
+
+import { useEffect, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Dashboard() {
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchStats() {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch("/api/dashboard");
+        const json = await res.json();
+        if (json.success) {
+          setStats(json.data);
+        } else {
+          setError(json.message || "Failed to fetch stats");
+        }
+      } catch (e) {
+        setError("Failed to fetch stats");
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchStats();
+  }, []);
+
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Members</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">1,329</div>
-            <p className="text-xs text-[#B8FF00]">+25% from last month</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Daily Check-ins
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">156</div>
-            <p className="text-xs text-[#B8FF00]">+10% from yesterday</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Monthly Revenue
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">$12,450</div>
-            <p className="text-xs text-[#B8FF00]">+18% from last month</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Expiring Soon</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">23</div>
-            <p className="text-xs text-orange-500">Follow up needed</p>
-          </CardContent>
-        </Card>
+        {loading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <Skeleton className="h-4 w-24 mb-2 bg-muted/30" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-20 mb-2 bg-muted/30" />
+                <Skeleton className="h-4 w-16 bg-muted/20" />
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Members</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {stats?.totalMembers?.toLocaleString() ?? "-"}
+                </div>
+                <p className="text-xs text-[#B8FF00]">&nbsp;</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Active Subscriptions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {stats?.activeSubscriptions?.toLocaleString() ?? "-"}
+                </div>
+                <p className="text-xs text-[#B8FF00]">&nbsp;</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {stats?.monthlyRevenue != null
+                    ? `Rp${stats.monthlyRevenue.toLocaleString("id-ID")}`
+                    : "-"}
+                </div>
+                <p className="text-xs text-[#B8FF00]">&nbsp;</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Expiring Soon</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {stats?.expiringSoon?.toLocaleString() ?? "-"}
+                </div>
+                <p className="text-xs text-orange-500">Follow up needed</p>
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
 
-      {/* Chart and Table */}
-      <div className="grid gap-4 md:gap-8 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <ChartAreaInteractive />
-        </div>
-        {/* Recent Activity */}
-        <Card>
-          <CardHeader className="flex flex-row items-center">
-            <div className="grid gap-2">
-              <CardTitle>Recent Activity</CardTitle>
-              <CardDescription>
-                Latest member check-ins and registrations
-              </CardDescription>
-            </div>
-            <Button asChild size="sm" className="ml-auto gap-1">
-              <Link href="/members">
-                View All
-                <ArrowUpRight className="h-4 w-4" />
-              </Link>
-            </Button>
-          </CardHeader>
-          <CardContent className="grid gap-6">
-            <div className="flex items-center gap-4">
-              <Avatar className="hidden h-9 w-9 sm:flex">
-                <AvatarImage src="/avatars/01.png" alt="Avatar" />
-                <AvatarFallback className="bg-[#B8FF00] text-black">
-                  OM
-                </AvatarFallback>
-              </Avatar>
-              <div className="grid gap-1">
-                <p className="text-sm font-medium leading-none">
-                  Olivia Martin
-                </p>
-                <p className="text-xs text-gray-400">Checked in at 08:30 AM</p>
-              </div>
-              <div className="ml-auto font-medium text-[#B8FF00]">Active</div>
-            </div>
-            <div className="flex items-center gap-4">
-              <Avatar className="hidden h-9 w-9 sm:flex">
-                <AvatarImage src="/avatars/02.png" alt="Avatar" />
-                <AvatarFallback className="bg-[#B8FF00] text-black">
-                  JL
-                </AvatarFallback>
-              </Avatar>
-              <div className="grid gap-1">
-                <p className="text-sm font-medium leading-none">Jackson Lee</p>
-                <p className="text-xs text-gray-400">New member registration</p>
-              </div>
-              <div className="ml-auto font-medium text-[#B8FF00]">New</div>
-            </div>
-            <div className="flex items-center gap-4">
-              <Avatar className="hidden h-9 w-9 sm:flex">
-                <AvatarImage src="/avatars/03.png" alt="Avatar" />
-                <AvatarFallback className="bg-[#B8FF00] text-black">
-                  IN
-                </AvatarFallback>
-              </Avatar>
-              <div className="grid gap-1">
-                <p className="text-sm font-medium leading-none">
-                  Isabella Nguyen
-                </p>
-                <p className="text-xs text-gray-400">Payment processed</p>
-              </div>
-              <div className="ml-auto font-medium text-[#B8FF00]">Paid</div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+
+     
+       <ChartAreaInteractive />
+       <CheckinHourRadarChart />
+       <TopPlansBarChart />
 
       {/* Upcoming Membership Expirations */}
       <Card>

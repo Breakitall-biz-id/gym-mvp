@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { Toaster } from "@/components/ui/sonner";
+import ReactQueryProvider from "./react-query-provider";
 
 export const metadata: Metadata = {
   title: "FitPro Gym Management",
@@ -31,7 +32,9 @@ export default function RootLayout({
         className="font-sans bg-slate-900 text-slate-50"
         suppressHydrationWarning
       >
-        {children}
+        <ReactQueryProvider>
+          {children}
+        </ReactQueryProvider>
         <Toaster />
       </body>
     </html>

@@ -84,7 +84,7 @@ export function MemberDetailDialog({
   const getStatusBadge = () => {
     const subscription = member.active_subscription;
     if (!subscription) {
-      return <Badge variant="secondary">No Subscription</Badge>;
+      return <Badge variant="outline">No Subscription</Badge>;
     }
 
     const endDate = new Date(subscription.end_date);
@@ -183,44 +183,44 @@ export function MemberDetailDialog({
           <div className="bg-white/10 rounded-xl p-6 shadow border border-white/10">
             <h4 className="font-medium mb-3 flex items-center gap-2 text-white">
               <CreditCard className="h-4 w-4" />
-              Subscription
+              Subscriptions
             </h4>
-
-            {member.active_subscription ? (
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-300">Plan:</span>
-                  <span className="text-white">
-                    {member.active_subscription.membership_plan?.name}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-300">Start Date:</span>
-                  <span className="text-white">
-                    {format(
-                      new Date(member.active_subscription.start_date),
-                      "MMM dd, yyyy"
-                    )}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-300">End Date:</span>
-                  <span className="text-white">
-                    {format(
-                      new Date(member.active_subscription.end_date),
-                      "MMM dd, yyyy"
-                    )}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-300">Status:</span>
-                  <span className="capitalize text-white">
-                    {member.active_subscription.status}
-                  </span>
-                </div>
+            {member.subscriptions && member.subscriptions.length > 0 ? (
+              <div className="space-y-4">
+                {member.subscriptions.map((sub) => (
+                  <div
+                    key={sub.id}
+                    className="border-b border-white/10 pb-2 mb-2 last:border-b-0 last:pb-0 last:mb-0"
+                  >
+                    <div className="flex justify-between items-center">
+                      <span className="text-white font-medium">
+                        {sub.membership_plan?.name || "-"}
+                      </span>
+                      <span className="capitalize text-xs px-2 py-1 rounded bg-white/20 text-white">
+                        {sub.status}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm mt-1">
+                      <span className="text-gray-300">Start:</span>
+                      <span className="text-white">
+                        {sub.start_date
+                          ? format(new Date(sub.start_date), "MMM dd, yyyy")
+                          : "-"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-300">End:</span>
+                      <span className="text-white">
+                        {sub.end_date
+                          ? format(new Date(sub.end_date), "MMM dd, yyyy")
+                          : "-"}
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-300">No active subscription</p>
+              <p className="text-sm text-gray-300">No subscriptions</p>
             )}
           </div>
 

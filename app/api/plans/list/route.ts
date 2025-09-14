@@ -9,7 +9,10 @@ export async function GET() {
     .eq("is_active", true)
     .order("name", { ascending: true });
   if (error) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 400 });
+    return NextResponse.json(
+      { success: false, message: error.message },
+      { status: 400 }
+    );
   }
   return NextResponse.json({ success: true, plans: data });
 }

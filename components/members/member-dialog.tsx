@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -46,7 +46,6 @@ const memberSchema = z.object({
 });
 
 type MemberFormData = z.infer<typeof memberSchema>;
-// Fetch membership plans for dropdown
 function usePlans() {
   const [plans, setPlans] = useState<any[]>([]);
   useEffect(() => {
@@ -71,10 +70,9 @@ export function MemberDialog({
   onSuccess,
 }: MemberDialogProps) {
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const router = useRouter();
   const supabase = createClient();
+  const queryClient = useQueryClient();
 
   const plans = usePlans();
   const form = useForm<MemberFormData>({
@@ -88,10 +86,8 @@ export function MemberDialog({
     },
   });
 
-  const onSubmit = async (data: MemberFormData) => {
-    setLoading(true);
-    try {
-      // 1. Create or update member
+  const mutation = useMutation({
+    mutationFn: async (data: MemberFormData) => {
       const response = await fetch(
         mode === "create" ? "/api/members" : `/api/members/${member!.id}`,
         {
@@ -106,40 +102,37 @@ export function MemberDialog({
       if (!result.success) {
         throw new Error(result.message || "An error occurred");
       }
-      // 2. If plan selected and mode is create, create subscription
       if (mode === "create" && data.plan_id) {
-        // Fetch plan detail for duration
-        const plan = plans.find((p) => p.id === data.plan_id);
-        if (plan) {
-          const startDate = new Date();
-          const endDate = new Date(startDate);
-          endDate.setDate(startDate.getDate() + plan.duration_days);
-          await fetch("/api/subscriptions", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              member_id: result.data?.id,
-              plan_id: plan.id,
-              start_date: startDate.toISOString().slice(0, 10),
-              end_date: endDate.toISOString().slice(0, 10),
-              status: "active",
-            }),
-          });
-        }
+        await fetch("/api/subscriptions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            member_id: result.data?.id,
+            plan_id: data.plan_id,
+            start_date: null,
+            end_date: null,
+            status: "pending",
+          }),
+        });
       }
+      return result;
+    },
+    onSuccess: (result) => {
       toast.success(
         result.message ||
           `Member ${mode === "create" ? "created" : "updated"} successfully`
       );
       setOpen(false);
       form.reset();
-      onSuccess?.();
-      router.refresh();
-    } catch (error: any) {
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+    },
+    onError: (error: any) => {
       toast.error(error.message || "An error occurred");
-    } finally {
-      setLoading(false);
-    }
+    },
+  });
+
+  const onSubmit = (data: MemberFormData) => {
+    mutation.mutate(data);
   };
 
   const handlePhotoUpload = async (
@@ -148,13 +141,11 @@ export function MemberDialog({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith("image/")) {
       toast.error("Please select an image file");
       return;
     }
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error("File size must be less than 5MB");
       return;
@@ -331,12 +322,14 @@ export function MemberDialog({
                 name="plan_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-white">Membership Plan</FormLabel>
+                    <FormLabel className="text-white">
+                      Membership Plan
+                    </FormLabel>
                     <Select
                       value={field.value || ""}
                       onValueChange={field.onChange}
                     >
-                      <SelectTrigger className="bg-white/30 border-white/20 text-white focus:ring-primary/30 shadow-sm">
+                      <SelectTrigger className="input bg-white/30 border-white/20 text-white placeholder:text-gray-400 focus:ring-primary/30 shadow-sm">
                         <SelectValue placeholder="Select plan (optional)" />
                       </SelectTrigger>
                       <SelectContent>
@@ -359,17 +352,17 @@ export function MemberDialog({
                 type="button"
                 variant="outline"
                 onClick={() => setOpen(false)}
-                disabled={loading}
+                disabled={mutation.isPending}
                 className="rounded-lg border-white/20 bg-white/10 hover:bg-primary/10 text-white shadow"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                disabled={loading}
+                disabled={mutation.isPending}
                 className="rounded-lg bg-primary text-black font-bold shadow-md hover:bg-primary/90"
               >
-                {loading
+                {mutation.isPending
                   ? "Saving..."
                   : mode === "create"
                   ? "Create Member"

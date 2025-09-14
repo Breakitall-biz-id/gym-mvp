@@ -19,6 +19,7 @@ import {
   GaugeCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import Image from "next/image";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: GaugeCircle },
@@ -71,9 +72,6 @@ export function Sidebar({
         )}
         style={{ transition: "padding 0.3s" }}
       >
-        <div className="p-2 bg-primary/20 rounded-xl transition-all duration-300 shadow-md">
-          <Dumbbell className="h-7 w-7 text-primary" />
-        </div>
         <div
           className={cn(
             "overflow-hidden flex flex-col justify-center",
@@ -92,17 +90,8 @@ export function Sidebar({
               transitionDelay: collapsed ? "0ms" : "250ms",
             }}
           >
-            FitPro
+            <Image src="/images/logo.png" alt="FitPro" width={400} height={400} />
           </span>
-          <p
-            className="text-xs text-gray-400 transition-opacity duration-200"
-            style={{
-              opacity: collapsed ? 0 : 1,
-              transitionDelay: collapsed ? "0ms" : "250ms",
-            }}
-          >
-            Gym Management
-          </p>
         </div>
       </div>
 

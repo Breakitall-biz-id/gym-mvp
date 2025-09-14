@@ -297,17 +297,61 @@ export function DashboardStats({ refreshKey }: DashboardStatsProps) {
                 <span className="text-slate-400">Daily Check-ins</span>
               </div>
             </div>
-            <div className="text-sm text-slate-400">
-              Average:{" "}
-              {Math.floor(
-                chartData.reduce((sum, day) => sum + day.checkins, 0) /
-                  chartData.length
-              )}{" "}
-              per day
+            <div className="h-[300px] w-full">
+              {loading ? (
+                <Skeleton className="w-full h-full rounded-lg bg-muted/20" />
+              ) : (
+                <div className="relative h-full w-full bg-gradient-to-t from-primary/10 to-transparent rounded-lg overflow-hidden border border-slate-800">
+                  {/* Chart bars and labels */}
+                  <div className="absolute inset-0 flex items-end justify-between px-2 pb-8">
+                    {chartData.map((day, index) => (
+                      <div
+                        key={index}
+                        className="flex flex-col items-center group cursor-pointer"
+                        style={{ width: `${100 / chartData.length}%` }}
+                      >
+                        <div
+                          className="w-1.5 bg-gradient-to-t from-primary to-primary/60 rounded-t-sm mb-2 transition-all duration-200 group-hover:from-primary group-hover:to-primary/80 group-hover:w-2"
+                          style={{
+                            height: `${(day.checkins / maxCheckins) * 220}px`,
+                            minHeight: "4px",
+                          }}
+                        />
+                        {index % 4 === 0 && (
+                          <span className="text-xs text-slate-400 transform -rotate-45 origin-left mt-1">
+                            {day.date}
+                          </span>
+                        )}
+                        {/* Tooltip on hover */}
+                        <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                          <div className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white whitespace-nowrap">
+                            <div className="font-medium">
+                              {day.checkins} check-ins
+                            </div>
+                            <div className="text-slate-400">{day.date}</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Grid lines */}
+                  <div className="absolute inset-0 pointer-events-none">
+                    {[0.25, 0.5, 0.75].map((percent) => (
+                      <div
+                        key={percent}
+                        className="absolute left-0 right-0 border-t border-slate-800/50"
+                        style={{ top: `${(1 - percent) * 100}%` }}
+                      />
+                    ))}
+                  </div>
+                  {/* Y-axis labels */}
+                  <div className="absolute left-0 top-0 bottom-8 w-8 flex flex-col justify-between text-xs text-slate-400 py-2">
+                    <span>{maxCheckins}</span>
+                    <span>{Math.floor(maxCheckins * 0.75)}</span>
+                    <span>{Math.floor(maxCheckins * 0.5)}</span>
+                    <span>{Math.floor(maxCheckins * 0.25)}</span>
+                    <span>0</span>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        </CardContent>
-      </Card>
-    </>
-  );
-}

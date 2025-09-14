@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
           start_date,
           end_date,
           status,
-          membership_plan:membership_plans(name, duration_days)
+          membership_plan:membership_plans(name, duration_days, price_cents, id)
         )
       `
       )
@@ -62,7 +62,6 @@ export async function GET(request: NextRequest) {
           ) || null,
       })) || [];
 
-    // Apply status filter
     let filteredMembers = processedMembers;
     if (status === "active") {
       filteredMembers = processedMembers.filter(

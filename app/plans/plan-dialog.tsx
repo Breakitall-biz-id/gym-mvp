@@ -1,6 +1,3 @@
-// PlanDialog.tsx
-// Modern, glassy modal for creating/editing membership plans
-
 import * as React from "react";
 import {
   Dialog,

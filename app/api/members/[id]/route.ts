@@ -29,7 +29,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           start_date,
           end_date,
           status,
-          membership_plan:membership_plans(name, duration_days, price_cents)
+          membership_plan:membership_plans(name, duration_days, price_cents, id)
         )
       `
       )

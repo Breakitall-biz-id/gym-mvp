@@ -33,7 +33,7 @@ export interface Subscription {
   plan_id: string
   start_date: string
   end_date: string
-  status: 'active' | 'expired' | 'cancelled'
+  status: 'active' | 'expired' | 'cancelled' | 'pending'
   created_at: string
   membership_plan?: MembershipPlan
   member?: Member

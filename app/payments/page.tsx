@@ -57,6 +57,7 @@ export default function PaymentsPage() {
 
   // Subscriptions for selected member
   const [memberSubscriptions, setMemberSubscriptions] = useState<any[]>([]);
+  const [amountWarning, setAmountWarning] = useState<string>("");
 
   useEffect(() => {
     fetchPayments();
@@ -80,7 +81,6 @@ export default function PaymentsPage() {
     setMembers(data.members || []);
   };
 
-
   const handleFormChange = (e: any) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -99,15 +99,50 @@ export default function PaymentsPage() {
   }, [form.member_id]);
 
   const handleSelectChange = (name: string, value: string) => {
+    // If selecting subscription, auto-fill amount from plan price
+    if (name === "subscription_id") {
+      if (value !== "manual") {
+        const sub = memberSubscriptions.find((s) => s.id === value);
+        if (sub && sub.membership_plan && sub.membership_plan.price_cents) {
+          setForm((f) => ({
+            ...f,
+            subscription_id: value,
+            amount_cents: String(sub.membership_plan.price_cents),
+          }));
+          setAmountWarning("");
+          return;
+        }
+      }
+    }
     setForm({ ...form, [name]: value });
   };
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
+    // Validation: if subscription selected, amount must match plan price
+    if (form.subscription_id && form.subscription_id !== "manual") {
+      const sub = memberSubscriptions.find(
+        (s) => s.id === form.subscription_id
+      );
+      if (sub && sub.membership_plan && sub.membership_plan.price_cents) {
+        const planPrice = Number(sub.membership_plan.price_cents);
+        const entered = Number(form.amount_cents);
+        if (entered !== planPrice) {
+          setAmountWarning(
+            `Amount must match plan price: Rp ${planPrice.toLocaleString(
+              "id-ID"
+            )}`
+          );
+          return;
+        }
+      }
+    }
+    setAmountWarning("");
     setLoading(true);
     const payload = {
       ...form,
-      subscription_id: form.subscription_id === "manual" ? null : form.subscription_id,
+      subscription_id:
+        form.subscription_id === "manual" ? null : form.subscription_id,
       amount_cents: parseInt(form.amount_cents, 10),
       paid_at: form.paid_at ? new Date(form.paid_at).toISOString() : null,
     };
@@ -116,8 +151,31 @@ export default function PaymentsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    setLoading(false);
     if (res.ok) {
+      if (payload.subscription_id) {
+        const sub = memberSubscriptions.find(
+          (s) => s.id === payload.subscription_id
+        );
+        if (sub && sub.membership_plan) {
+          const startDate =
+            payload.paid_at?.slice(0, 10) ||
+            new Date().toISOString().slice(0, 10);
+          const endDate = new Date(startDate);
+          endDate.setDate(
+            endDate.getDate() + sub.membership_plan.duration_days
+          );
+          await fetch("/api/subscriptions", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: sub.id,
+              status: "active",
+              start_date: startDate,
+              end_date: endDate.toISOString().slice(0, 10),
+            }),
+          });
+        }
+      }
       setOpen(false);
       setForm({
         member_id: "",
@@ -133,6 +191,7 @@ export default function PaymentsPage() {
     } else {
       alert("Failed to add payment");
     }
+    setLoading(false);
   };
 
   const getStatusBadge = (status: string) => {
@@ -243,7 +302,9 @@ export default function PaymentsPage() {
                     </Label>
                     <Select
                       value={form.subscription_id}
-                      onValueChange={(v) => handleSelectChange("subscription_id", v)}
+                      onValueChange={(v) =>
+                        handleSelectChange("subscription_id", v)
+                      }
                     >
                       <SelectTrigger
                         id="subscription_id"
@@ -252,7 +313,9 @@ export default function PaymentsPage() {
                         <SelectValue placeholder="Manual Payment (no subscription)" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="manual">Manual Payment (no subscription)</SelectItem>
+                        <SelectItem value="manual">
+                          Manual Payment (no subscription)
+                        </SelectItem>
                         {memberSubscriptions.map((sub) => (
                           <SelectItem key={sub.id} value={sub.id}>
                             {sub.membership_plan?.name || "Plan"} ({sub.status})
@@ -270,17 +333,54 @@ export default function PaymentsPage() {
                     id="amount_cents"
                     name="amount_cents"
                     value={formatRupiah(form.amount_cents)}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setForm({
                         ...form,
                         amount_cents: e.target.value.replace(/[^\d]/g, ""),
-                      })
-                    }
+                      });
+                      // If subscription selected, validate live
+                      if (
+                        form.subscription_id &&
+                        form.subscription_id !== "manual"
+                      ) {
+                        const sub = memberSubscriptions.find(
+                          (s) => s.id === form.subscription_id
+                        );
+                        if (
+                          sub &&
+                          sub.membership_plan &&
+                          sub.membership_plan.price_cents
+                        ) {
+                          const planPrice = Number(
+                            sub.membership_plan.price_cents
+                          );
+                          const entered = Number(
+                            e.target.value.replace(/[^\d]/g, "")
+                          );
+                          if (entered !== planPrice) {
+                            setAmountWarning(
+                              `Amount must match plan price: Rp ${planPrice.toLocaleString(
+                                "id-ID"
+                              )}`
+                            );
+                          } else {
+                            setAmountWarning("");
+                          }
+                        }
+                      } else {
+                        setAmountWarning("");
+                      }
+                    }}
                     placeholder="e.g. 150000"
                     inputMode="numeric"
                     required
                     className="bg-white/30 border-white/20 text-white placeholder:text-gray-400 focus:ring-primary/30 shadow-sm"
                   />
+                  {amountWarning && (
+                    <div className="text-sm text-red-500 mt-1">
+                      {amountWarning}
+                    </div>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <div className="flex-1 space-y-2">

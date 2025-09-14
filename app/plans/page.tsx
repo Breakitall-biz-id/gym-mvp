@@ -11,34 +11,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Clock, DollarSign, Edit, EyeOff, Eye } from "lucide-react";
-// Reactivate plan
-async function handleReactivate(plan: MembershipPlan) {
-  setLoading(true);
-  setError(null);
-  try {
-    const res = await fetch(`/api/plans/${plan.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...plan,
-        is_active: true,
-      }),
-    });
-    const result = await res.json();
-    if (!result.success) throw new Error(result.message);
-    fetchPlans();
-  } catch (e: any) {
-    setError(e.message || "Failed to reactivate plan");
-  } finally {
-    setLoading(false);
-  }
-}
-
 import { PlanDialog } from "./plan-dialog";
 import { MembershipPlan } from "@/lib/types";
 
 export default function PlansPage() {
-  // Reactivate plan
+
+  const [plans, setPlans] = React.useState<MembershipPlan[]>([]);
+  const [loading, setLoading] = React.useState(false);
+  const [modalOpen, setModalOpen] = React.useState(false);
+  const [editPlan, setEditPlan] = React.useState<MembershipPlan | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
+
+
   async function handleReactivate(plan: MembershipPlan) {
     setLoading(true);
     setError(null);
@@ -61,7 +45,6 @@ export default function PlansPage() {
     }
   }
   const [tab, setTab] = React.useState<"active" | "inactive">("active");
-  // Nonaktifkan plan
   async function handleDeactivate(plan: MembershipPlan) {
     setLoading(true);
     setError(null);
@@ -83,13 +66,6 @@ export default function PlansPage() {
       setLoading(false);
     }
   }
-  const [plans, setPlans] = React.useState<MembershipPlan[]>([]);
-  const [loading, setLoading] = React.useState(false);
-  const [modalOpen, setModalOpen] = React.useState(false);
-  const [editPlan, setEditPlan] = React.useState<MembershipPlan | null>(null);
-  const [error, setError] = React.useState<string | null>(null);
-
-  // Fetch plans from Supabase
   const fetchPlans = React.useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -107,7 +83,6 @@ export default function PlansPage() {
     fetchPlans();
   }, [fetchPlans]);
 
-  // Add or edit plan handler
   async function handleSubmit(data: {
     name: string;
     price: number;
