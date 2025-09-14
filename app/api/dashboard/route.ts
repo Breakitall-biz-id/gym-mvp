@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = createClient();
@@ -155,6 +157,7 @@ export async function GET(request: NextRequest) {
         { status: 500 }
       );
     }
+
 
     // Aggregate per hour (0-23)
     const hourDist: number[] = Array(24).fill(0);
