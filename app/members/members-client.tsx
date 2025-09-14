@@ -82,9 +82,11 @@ export function MembersClient() {
   });
 
   // Filter state: join date
-const [joinDateFrom, setJoinDateFrom] = React.useState<Date>()
+  const [joinDateFrom, setJoinDateFrom] = React.useState<Date>();
   const [joinDateTo, setJoinDateTo] = React.useState<Date | undefined>();
-  const [membershipFrom, setMembershipFrom] = React.useState<Date | undefined>();
+  const [membershipFrom, setMembershipFrom] = React.useState<
+    Date | undefined
+  >();
   const [membershipTo, setMembershipTo] = React.useState<Date | undefined>();
 
   const [planId, setPlanId] = useState<string>("all");
@@ -129,8 +131,10 @@ const [joinDateFrom, setJoinDateFrom] = React.useState<Date>()
 
     if (planId && planId !== "all") {
       result = result.filter((m) =>
-        m.subscriptions?.some((s) =>
-          s.membership_plan?.id && String(s.membership_plan.id) === String(planId)
+        m.subscriptions?.some(
+          (s) =>
+            s.membership_plan?.id &&
+            String(s.membership_plan.id) === String(planId)
         )
       );
     }
@@ -153,7 +157,15 @@ const [joinDateFrom, setJoinDateFrom] = React.useState<Date>()
     }
 
     return result;
-  }, [members, debouncedSearchQuery, joinDateFrom, joinDateTo, planId, membershipFrom, membershipTo]);
+  }, [
+    members,
+    debouncedSearchQuery,
+    joinDateFrom,
+    joinDateTo,
+    planId,
+    membershipFrom,
+    membershipTo,
+  ]);
 
   const handleMemberUpdate = () => {
     queryClient.invalidateQueries({ queryKey: ["members"] });
@@ -265,15 +277,14 @@ const [joinDateFrom, setJoinDateFrom] = React.useState<Date>()
               />
             </div>
 
-
-
-
             {/* Membership Plan */}
             <div>
               <Label className="block mb-1">Membership Plan</Label>
               <Select value={planId} onValueChange={setPlanId}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder={loadingPlans ? "Loading..." : "All Plans"} />
+                  <SelectValue
+                    placeholder={loadingPlans ? "Loading..." : "All Plans"}
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Plans</SelectItem>
@@ -310,11 +321,11 @@ const [joinDateFrom, setJoinDateFrom] = React.useState<Date>()
                 type="button"
                 variant="outline"
                 onClick={() => {
-                  setJoinDateFrom(undefined)
-                  setJoinDateTo(undefined)
-                  setMembershipFrom(undefined)
-                  setMembershipTo(undefined)
-                  setPlanId("all")
+                  setJoinDateFrom(undefined);
+                  setJoinDateTo(undefined);
+                  setMembershipFrom(undefined);
+                  setMembershipTo(undefined);
+                  setPlanId("all");
                 }}
               >
                 Reset
@@ -344,7 +355,10 @@ const [joinDateFrom, setJoinDateFrom] = React.useState<Date>()
             </div>
           ) : (
             filteredMembers.map((member) => (
-              <Card key={member.id} className="hover:shadow-md transition-shadow">
+              <Card
+                key={member.id}
+                className="hover:shadow-md transition-shadow"
+              >
                 <CardContent className="p-6">
                   <div className="flex items-center gap-3 mb-4">
                     <Avatar>
@@ -358,9 +372,12 @@ const [joinDateFrom, setJoinDateFrom] = React.useState<Date>()
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-medium truncate">{member.full_name}</h3>
+                      <h3 className="font-medium truncate">
+                        {member.full_name}
+                      </h3>
                       <p className="text-sm text-muted-foreground">
-                        Joined {new Date(member.created_at).toLocaleDateString()}
+                        Joined{" "}
+                        {new Date(member.created_at).toLocaleDateString()}
                       </p>
                     </div>
                   </div>

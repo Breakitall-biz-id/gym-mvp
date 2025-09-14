@@ -1,23 +1,23 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { format } from "date-fns"
-import { Calendar as CalendarIcon } from "lucide-react"
+import * as React from "react";
+import { format } from "date-fns";
+import { Calendar as CalendarIcon } from "lucide-react";
 
-import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
-import { Label } from "@/components/ui/label"
+} from "@/components/ui/popover";
+import { Label } from "@/components/ui/label";
 
 interface DatePickerFieldProps {
-  label?: string
-  value?: Date
-  onChange: (date: Date | undefined) => void
-  placeholder?: string
+  label?: string;
+  value?: Date;
+  onChange: (date: Date | undefined) => void;
+  placeholder?: string;
 }
 
 export function DatePickerField({
@@ -51,5 +51,5 @@ export function DatePickerField({
         </PopoverContent>
       </Popover>
     </div>
-  )
+  );
 }

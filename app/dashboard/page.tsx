@@ -9,10 +9,8 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-
   CardTitle,
 } from "@/components/ui/card";
-
 
 import { ChartAreaInteractive } from "@/components/gym-chart";
 import { CheckinHourRadarChart } from "@/components/dashboard/checkin-hour-radar-chart";
@@ -68,7 +66,9 @@ export default function Dashboard() {
           <>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Members</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Total Members
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
@@ -79,7 +79,9 @@ export default function Dashboard() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Subscriptions</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Active Subscriptions
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
@@ -90,7 +92,9 @@ export default function Dashboard() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Monthly Revenue
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
@@ -103,7 +107,9 @@ export default function Dashboard() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Expiring Soon</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Expiring Soon
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
@@ -116,11 +122,9 @@ export default function Dashboard() {
         )}
       </div>
 
-
-     
-       <ChartAreaInteractive />
-       <CheckinHourRadarChart />
-       <TopPlansBarChart />
+      <ChartAreaInteractive />
+      <CheckinHourRadarChart />
+      <TopPlansBarChart />
 
       {/* Upcoming Membership Expirations */}
       <Card>
