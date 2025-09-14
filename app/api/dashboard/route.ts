@@ -3,46 +3,64 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('SUPABASE_URL', process.env.NEXT_PUBLIC_SUPABASE_URL)
+    console.log('SUPABASE_KEY', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
     const supabase = createClient();
 
     // Total members
-    const { count: totalMembers } = await supabase
+    const { count: totalMembers, error: membersErr } = await supabase
       .from("members")
       .select("id", { count: "exact", head: true });
+    if (membersErr) {
+      return NextResponse.json({ success: false, error: 'membersErr', details: membersErr }, { status: 500 });
+    }
 
     // Active subscriptions
-    const { count: activeSubscriptions } = await supabase
+    const { count: activeSubscriptions, error: activeSubsErr } = await supabase
       .from("subscriptions")
       .select("id", { count: "exact", head: true })
       .eq("status", "active");
+    if (activeSubsErr) {
+      return NextResponse.json({ success: false, error: 'activeSubsErr', details: activeSubsErr }, { status: 500 });
+    }
 
     // Expiring soon (next 7 days)
     const nextWeek = new Date();
     nextWeek.setDate(nextWeek.getDate() + 7);
     const today = new Date();
-    const { count: expiringSoon } = await supabase
+    const { count: expiringSoon, error: expSoonErr } = await supabase
       .from("subscriptions")
       .select("id", { count: "exact", head: true })
       .eq("status", "active")
       .gte("end_date", today.toISOString().split("T")[0])
       .lte("end_date", nextWeek.toISOString().split("T")[0]);
+    if (expSoonErr) {
+      return NextResponse.json({ success: false, error: 'expSoonErr', details: expSoonErr }, { status: 500 });
+    }
 
     // Today's check-ins
     const todayStr = today.toISOString().split("T")[0];
-    const { count: todaysCheckins } = await supabase
+    const { count: todaysCheckins, error: todayCheckinErr } = await supabase
       .from("attendance")
       .select("id", { count: "exact", head: true })
       .gte("checked_in_at", todayStr + "T00:00:00")
       .lte("checked_in_at", todayStr + "T23:59:59");
+    if (todayCheckinErr) {
+      return NextResponse.json({ success: false, error: 'todayCheckinErr', details: todayCheckinErr }, { status: 500 });
+    }
 
     // Monthly revenue (current month, paid only)
     const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const { data: payments } = await supabase
+    const { data: payments, error: paymentsErr } = await supabase
       .from("payments")
       .select("amount_cents, paid_at, status")
       .eq("status", "paid")
       .gte("paid_at", firstOfMonth.toISOString())
       .lte("paid_at", today.toISOString());
+    if (paymentsErr) {
+      return NextResponse.json({ success: false, error: 'paymentsErr', details: paymentsErr }, { status: 500 });
+    }
+    console.log('payments', payments);
     const monthlyRevenue = (payments || []).reduce(
       (sum, p) => sum + (p.amount_cents || 0),
       0
@@ -61,6 +79,10 @@ export async function GET(request: NextRequest) {
       .select("checked_in_at")
       .gte("checked_in_at", startDateStr + "T00:00:00")
       .lte("checked_in_at", endDateStr + "T23:59:59");
+    if (checkinAggErr) {
+      return NextResponse.json({ success: false, error: 'checkinAggErr', details: checkinAggErr }, { status: 500 });
+    }
+    console.log('checkinAgg', checkinAgg);
 
     // Group registrations by date
     const { data: regAgg, error: regAggErr } = await supabase
@@ -68,6 +90,10 @@ export async function GET(request: NextRequest) {
       .select("created_at")
       .gte("created_at", startDateStr + "T00:00:00")
       .lte("created_at", endDateStr + "T23:59:59");
+    if (regAggErr) {
+      return NextResponse.json({ success: false, error: 'regAggErr', details: regAggErr }, { status: 500 });
+    }
+    console.log('regAgg', regAgg);
 
     // Aggregate counts per day in JS
     const checkinMap = new Map();
@@ -104,10 +130,14 @@ export async function GET(request: NextRequest) {
     const checkinTimeStart = new Date(today);
     checkinTimeStart.setDate(today.getDate() - 29);
     const checkinTimeStartStr = checkinTimeStart.toISOString();
-    const { data: checkinTimes } = await supabase
+    const { data: checkinTimes, error: checkinTimesErr } = await supabase
       .from("attendance")
       .select("checked_in_at")
       .gte("checked_in_at", checkinTimeStartStr);
+    if (checkinTimesErr) {
+      return NextResponse.json({ success: false, error: 'checkinTimesErr', details: checkinTimesErr }, { status: 500 });
+    }
+    console.log('checkinTimes', checkinTimes);
 
     // Aggregate per hour (0-23)
     const hourDist: number[] = Array(24).fill(0);
@@ -122,6 +152,10 @@ export async function GET(request: NextRequest) {
       .from("subscriptions")
       .select("plan_id, membership_plans(name)")
       .eq("status", "active");
+    if (planAggErr) {
+      return NextResponse.json({ success: false, error: 'planAggErr', details: planAggErr }, { status: 500 });
+    }
+    console.log('planAgg', planAgg);
 
 
 
@@ -144,8 +178,8 @@ export async function GET(request: NextRequest) {
           plan = (row.membership_plans as any).name || "Unknown";
         }
       }
-      if (plan === "Unknown" && row.membership_plan_id) {
-        plan = row.membership_plan_id;
+      if (plan === "Unknown" && row.plan_id) {
+        plan = row.plan_id;
       }
       planCountMap.set(plan, (planCountMap.get(plan) || 0) + 1);
     });
