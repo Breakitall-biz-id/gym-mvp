@@ -90,7 +90,8 @@ export function Sidebar({
               transitionDelay: collapsed ? "0ms" : "250ms",
             }}
           >
-            <Image src="/images/logo.png" alt="FitPro" width={400} height={400} />
+             <Image src="/logo/innersport-logo.svg" alt="Logo" width={200} height={200} />
+            
           </span>
         </div>
       </div>

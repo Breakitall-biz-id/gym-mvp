@@ -3,8 +3,6 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
   try {
-    console.log("SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL);
-    console.log("SUPABASE_KEY", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
     const supabase = createClient();
 
     // Total members
@@ -75,7 +73,6 @@ export async function GET(request: NextRequest) {
         { status: 500 }
       );
     }
-    console.log("payments", payments);
     const monthlyRevenue = (payments || []).reduce(
       (sum, p) => sum + (p.amount_cents || 0),
       0
@@ -100,7 +97,6 @@ export async function GET(request: NextRequest) {
         { status: 500 }
       );
     }
-    console.log("checkinAgg", checkinAgg);
 
     // Group registrations by date
     const { data: regAgg, error: regAggErr } = await supabase
@@ -114,9 +110,7 @@ export async function GET(request: NextRequest) {
         { status: 500 }
       );
     }
-    console.log("regAgg", regAgg);
 
-    // Aggregate counts per day in JS
     const checkinMap = new Map();
     (checkinAgg || []).forEach((row) => {
       const date = row.checked_in_at?.slice(0, 10);
@@ -161,7 +155,6 @@ export async function GET(request: NextRequest) {
         { status: 500 }
       );
     }
-    console.log("checkinTimes", checkinTimes);
 
     // Aggregate per hour (0-23)
     const hourDist: number[] = Array(24).fill(0);
@@ -182,7 +175,6 @@ export async function GET(request: NextRequest) {
         { status: 500 }
       );
     }
-    console.log("planAgg", planAgg);
 
     const planCountMap = new Map();
     (planAgg || []).forEach((row) => {

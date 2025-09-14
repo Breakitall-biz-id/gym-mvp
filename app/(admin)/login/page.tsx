@@ -35,9 +35,6 @@ export default function LoginPage() {
     setLoading(true)
     
     try {
-      console.log('🔐 Attempting login with:', data.email)
-      console.log('🔗 Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
-      console.log('🔑 Supabase Key exists:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
       
       const { error } = await supabase.auth.signInWithPassword(data)
       
@@ -46,14 +43,12 @@ export default function LoginPage() {
         console.error('❌ Full error:', error)
         toast.error(error.message)
       } else {
-        console.log('Login successful, checking user...')
         toast.success('Logged in successfully')
         
         // Get user profile to determine redirect
         const { data: { user: currentUser } } = await supabase.auth.getUser()
         
         if (currentUser) {
-          console.log('Login - Current user ID:', currentUser.id)
           
           // Wait a bit longer for session to be established
           await new Promise(resolve => setTimeout(resolve, 1000))
@@ -64,8 +59,6 @@ export default function LoginPage() {
             .eq('id', currentUser.id)
             .single()
           
-          console.log('Login - User profile:', profile)
-          console.log('Login - Profile error:', profileError)
           
           // Redirect based on role
           if (profile?.role === 'MEMBER') {
