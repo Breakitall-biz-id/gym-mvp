@@ -17,40 +17,28 @@ import { CheckinHourRadarChart } from "@/components/dashboard/checkin-hour-radar
 import { TopPlansBarChart } from "@/components/dashboard/top-plans-bar-chart";
 import { DataTableDemo } from "@/components/gym-data-table";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Dashboard() {
-  const [stats, setStats] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchStats() {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await fetch("/api/dashboard");
-        const json = await res.json();
-        if (json.success) {
-          setStats(json.data);
-        } else {
-          setError(json.message || "Failed to fetch stats");
-        }
-      } catch (e) {
-        setError("Failed to fetch stats");
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchStats();
-  }, []);
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["dashboard"],
+    queryFn: async () => {
+      const res = await fetch("/api/dashboard");
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message || "Failed to fetch stats");
+      return json.data;
+    },
+  });
+
+  
 
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {loading ? (
+        {isLoading ? (
           Array.from({ length: 4 }).map((_, i) => (
             <Card key={i}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -72,7 +60,7 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {stats?.totalMembers?.toLocaleString() ?? "-"}
+                  {data?.totalMembers?.toLocaleString() ?? "-"}
                 </div>
                 <p className="text-xs text-[#B8FF00]">&nbsp;</p>
               </CardContent>
@@ -85,7 +73,7 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {stats?.activeSubscriptions?.toLocaleString() ?? "-"}
+                  {data?.activeSubscriptions?.toLocaleString() ?? "-"}
                 </div>
                 <p className="text-xs text-[#B8FF00]">&nbsp;</p>
               </CardContent>
@@ -98,8 +86,8 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {stats?.monthlyRevenue != null
-                    ? `Rp${stats.monthlyRevenue.toLocaleString("id-ID")}`
+                  {data?.monthlyRevenue != null
+                    ? `Rp${data.monthlyRevenue.toLocaleString("id-ID")}`
                     : "-"}
                 </div>
                 <p className="text-xs text-[#B8FF00]">&nbsp;</p>
@@ -113,7 +101,7 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {stats?.expiringSoon?.toLocaleString() ?? "-"}
+                  {data?.expiringSoon?.toLocaleString() ?? "-"}
                 </div>
                 <p className="text-xs text-orange-500">Follow up needed</p>
               </CardContent>
@@ -122,9 +110,9 @@ export default function Dashboard() {
         )}
       </div>
 
-      <ChartAreaInteractive />
-      <CheckinHourRadarChart />
-      <TopPlansBarChart />
+  <ChartAreaInteractive activityChart={data?.activityChart} isLoading={isLoading} />
+  <CheckinHourRadarChart checkinHourDist={data?.checkinHourDist} isLoading={isLoading} />
+  <TopPlansBarChart topPlans={data?.topPlans} isLoading={isLoading} />
 
       {/* Upcoming Membership Expirations */}
       <Card>

@@ -18,27 +18,16 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState } from "react";
 
-export function TopPlansBarChart() {
-  const [data, setData] = useState<{ plan: string; count: number }[]>([]);
-  const [loading, setLoading] = useState(true);
+interface TopPlansBarChartProps {
+  topPlans?: { plan: string; count: number }[];
+  isLoading?: boolean;
+}
 
-  useEffect(() => {
-    async function fetchData() {
-      setLoading(true);
-      try {
-        const res = await fetch("/api/dashboard");
-        const json = await res.json();
-        if (json.success && Array.isArray(json.data?.topPlans)) {
-          setData(json.data.topPlans);
-        } else {
-          setData([]);
-        }
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, []);
+export function TopPlansBarChart({
+  topPlans = [],
+  isLoading,
+}: TopPlansBarChartProps) {
+  const data = topPlans || [];
 
   return (
     <Card className="@container/card bg-white/10 border border-white/10 shadow-xl backdrop-blur-md">
@@ -52,7 +41,7 @@ export function TopPlansBarChart() {
       </CardHeader>
       <CardContent className="pt-0">
         <div className="h-72 w-full">
-          {loading ? (
+          {isLoading ? (
             <Skeleton className="w-full h-full rounded-xl bg-muted/20" />
           ) : (
             <ResponsiveContainer width="100%" height="100%">

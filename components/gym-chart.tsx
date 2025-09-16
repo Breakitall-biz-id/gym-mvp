@@ -31,6 +31,11 @@ import { Skeleton } from "./ui/skeleton";
 
 type ChartDatum = { date: string; checkins: number; registrations: number };
 
+interface ChartAreaInteractiveProps {
+  activityChart?: ChartDatum[];
+  isLoading?: boolean;
+}
+
 const chartConfig = {
   activity: {
     label: "Activity",
@@ -45,37 +50,12 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-export function ChartAreaInteractive() {
+export function ChartAreaInteractive({
+  activityChart = [],
+  isLoading,
+}: ChartAreaInteractiveProps) {
   const isMobile = useIsMobile();
   const [timeRange, setTimeRange] = React.useState("30d");
-  const [chartData, setChartData] = useState<ChartDatum[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (isMobile) {
-      setTimeRange("7d");
-    }
-  }, [isMobile]);
-
-  useEffect(() => {
-    async function fetchChartData() {
-      setLoading(true);
-      try {
-        const res = await fetch("/api/dashboard");
-        const json = await res.json();
-        if (json.success && Array.isArray(json.data?.activityChart)) {
-          setChartData(json.data.activityChart);
-        } else {
-          setChartData([]);
-        }
-      } catch {
-        setChartData([]);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchChartData();
-  }, []);
 
   // Filter data by time range
   const now = new Date();
@@ -84,7 +64,7 @@ export function ChartAreaInteractive() {
   else if (timeRange === "7d") daysToSubtract = 7;
   const startDate = new Date(now);
   startDate.setDate(now.getDate() - daysToSubtract);
-  const filteredData = chartData.filter((item) => {
+  const filteredData = (activityChart || []).filter((item) => {
     const date = new Date(item.date);
     return date >= startDate && date <= now;
   });
@@ -139,7 +119,7 @@ export function ChartAreaInteractive() {
         </div>
       </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
-        {loading ? (
+        {isLoading ? (
           <Skeleton className="w-full h-[250px] rounded-xl bg-muted/20" />
         ) : (
           <ChartContainer

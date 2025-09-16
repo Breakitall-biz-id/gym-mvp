@@ -38,13 +38,12 @@ export default function PaymentsPage() {
   const [loading, setLoading] = useState(false);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [stats, setStats] = useState<any>({
-    thisMonthTotal: 0,
-    lastMonthTotal: 0,
-    growth: 0,
+    totalPayments: 0,
+    totalRevenue: 0,
+    monthlyPayments: 0,
   });
   const [members, setMembers] = useState<Member[]>([]);
 
-  // Form state
   const [form, setForm] = useState({
     member_id: "",
     subscription_id: "manual",
@@ -55,7 +54,6 @@ export default function PaymentsPage() {
     notes: "",
   });
 
-  // Subscriptions for selected member
   const [memberSubscriptions, setMemberSubscriptions] = useState<any[]>([]);
   const [amountWarning, setAmountWarning] = useState<string>("");
 
@@ -71,9 +69,9 @@ export default function PaymentsPage() {
     setPayments(data.payments || []);
   };
   const fetchStats = async () => {
-    const res = await fetch("/api/payments-stats");
+    const res = await fetch("/api/dashboard/payments");
     const data = await res.json();
-    setStats(data.stats || { thisMonthTotal: 0, lastMonthTotal: 0, growth: 0 });
+    setStats(data.stats || { totalPayments: 0, totalRevenue: 0, monthlyPayments: 0 });
   };
   const fetchMembers = async () => {
     const res = await fetch("/api/members?limit=1000");
@@ -490,49 +488,44 @@ export default function PaymentsPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">This Month</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Payments</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-primary">
-              ${stats.thisMonthTotal.toFixed(2)}
+              {stats.totalPayments}
             </div>
             <p className="text-xs text-muted-foreground">
-              Total payments received
+              Total payment transactions
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Last Month</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ${stats.lastMonthTotal.toFixed(2)}
+              {formatRupiah(stats.totalRevenue)}
             </div>
             <p className="text-xs text-muted-foreground">
-              Previous month total
+              Total revenue received
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Growth</CardTitle>
+            <CardTitle className="text-sm font-medium">Payments This Month</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div
-              className={`text-2xl font-bold ${
-                stats.growth >= 0 ? "text-green-500" : "text-red-500"
-              }`}
-            >
-              {stats.growth >= 0 ? "+" : ""}
-              {stats.growth.toFixed(1)}%
+            <div className="text-2xl font-bold text-green-500">
+              {stats.monthlyPayments}
             </div>
-            <p className="text-xs text-muted-foreground">Month over month</p>
+            <p className="text-xs text-muted-foreground">Payments in current month</p>
           </CardContent>
         </Card>
       </div>

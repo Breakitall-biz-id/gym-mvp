@@ -45,41 +45,27 @@ const hourLabels = [
   "23:00",
 ];
 
-export function CheckinHourRadarChart() {
-  const [data, setData] = useState<{ hour: string; count: number }[]>([]);
-  const [loading, setLoading] = useState(true);
+interface CheckinHourRadarChartProps {
+  checkinHourDist?: number[];
+  isLoading?: boolean;
+}
 
-  useEffect(() => {
-    async function fetchData() {
-      setLoading(true);
-      try {
-        const res = await fetch("/api/dashboard");
-        const json = await res.json();
-        if (json.success && Array.isArray(json.data?.checkinHourDist)) {
-          // Only show hours with data (count > 0)
-          setData(
-            json.data.checkinHourDist
-              .map((count: number, i: number) => ({
-                hour: hourLabels[i],
-                count,
-              }))
-              .filter((d: { hour: string; count: number }) => d.count > 0)
-          );
-        } else {
-          setData([]);
-        }
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, []);
+export function CheckinHourRadarChart({
+  checkinHourDist = [],
+  isLoading,
+}: CheckinHourRadarChartProps) {
+  const data = (checkinHourDist || [])
+    .map((count: number, i: number) => ({
+      hour: hourLabels[i],
+      count,
+    }))
+    .filter((d: { hour: string; count: number }) => d.count > 0);
 
   return (
     <Card className="@container/card bg-white/10 border border-white/10 shadow-xl backdrop-blur-md">
       <CardHeader className="pb-2">
         <CardTitle className="text-white text-base font-semibold">
-            Check-in Hour Distribution
+          Check-in Hour Distribution
         </CardTitle>
         <CardDescription className="text-gray-400">
           Distribution of member check-in times (last 30 days)
@@ -87,7 +73,7 @@ export function CheckinHourRadarChart() {
       </CardHeader>
       <CardContent className="pt-0">
         <div className="h-72 w-full">
-          {loading ? (
+          {isLoading ? (
             <Skeleton className="w-full h-full rounded-xl bg-muted/20" />
           ) : (
             <ResponsiveContainer width="100%" height="100%">
