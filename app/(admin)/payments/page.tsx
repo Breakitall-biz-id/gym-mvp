@@ -32,17 +32,47 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function PaymentsPage() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [stats, setStats] = useState<any>({
-    totalPayments: 0,
-    totalRevenue: 0,
-    monthlyPayments: 0,
+  const queryClient = useQueryClient();
+  const [memberSubscriptions, setMemberSubscriptions] = useState<any[]>([]);
+  const [amountWarning, setAmountWarning] = useState<string>("");
+
+  // Payments
+  const { data: paymentsData, isLoading: paymentsLoading } = useQuery({
+    queryKey: ["payments"],
+    queryFn: async () => {
+      const res = await fetch("/api/payments");
+      const data = await res.json();
+      return data.payments || [];
+    },
   });
-  const [members, setMembers] = useState<Member[]>([]);
+
+  // Stats
+  const { data: stats, isLoading: statsLoading } = useQuery({
+    queryKey: ["payments-stats"],
+    queryFn: async () => {
+      const res = await fetch("/api/dashboard/payments");
+      const data = await res.json();
+      return (
+        data.stats || { totalPayments: 0, totalRevenue: 0, monthlyPayments: 0 }
+      );
+    },
+  });
+
+  // Members
+  const { data: members, isLoading: membersLoading } = useQuery({
+    queryKey: ["members"],
+    queryFn: async () => {
+      const res = await fetch("/api/members?limit=1000");
+      const data = await res.json();
+      return data.members || [];
+    },
+  });
 
   const [form, setForm] = useState({
     member_id: "",
@@ -53,31 +83,6 @@ export default function PaymentsPage() {
     paid_at: new Date().toISOString().slice(0, 10),
     notes: "",
   });
-
-  const [memberSubscriptions, setMemberSubscriptions] = useState<any[]>([]);
-  const [amountWarning, setAmountWarning] = useState<string>("");
-
-  useEffect(() => {
-    fetchPayments();
-    fetchStats();
-    fetchMembers();
-  }, []);
-
-  const fetchPayments = async () => {
-    const res = await fetch("/api/payments");
-    const data = await res.json();
-    setPayments(data.payments || []);
-  };
-  const fetchStats = async () => {
-    const res = await fetch("/api/dashboard/payments");
-    const data = await res.json();
-    setStats(data.stats || { totalPayments: 0, totalRevenue: 0, monthlyPayments: 0 });
-  };
-  const fetchMembers = async () => {
-    const res = await fetch("/api/members?limit=1000");
-    const data = await res.json();
-    setMembers(data.members || []);
-  };
 
   const handleFormChange = (e: any) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -92,7 +97,6 @@ export default function PaymentsPage() {
     } else {
       setMemberSubscriptions([]);
     }
-    // Reset subscription_id if member changes
     setForm((f) => ({ ...f, subscription_id: "manual" }));
   }, [form.member_id]);
 
@@ -114,6 +118,38 @@ export default function PaymentsPage() {
     }
     setForm({ ...form, [name]: value });
   };
+
+  const addPaymentMutation = useMutation({
+    mutationFn: async (payload: any) => {
+      const res = await fetch("/api/payments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error("Failed to add payment");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
+      queryClient.invalidateQueries({ queryKey: ["payments-stats"] });
+      setOpen(false);
+      setForm({
+        member_id: "",
+        subscription_id: "",
+        amount_cents: "",
+        method: "cash",
+        status: "paid",
+        paid_at: new Date().toISOString().slice(0, 10),
+        notes: "",
+      });
+    },
+    onError: () => {
+      alert("Failed to add payment");
+    },
+    onSettled: () => {
+      setLoading(false);
+    },
+  });
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
@@ -143,61 +179,7 @@ export default function PaymentsPage() {
       amount_cents: parseInt(form.amount_cents, 10),
       paid_at: form.paid_at ? new Date(form.paid_at).toISOString() : null,
     };
-    const res = await fetch("/api/payments", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (res.ok) {
-      if (payload.subscription_id) {
-        const sub = memberSubscriptions.find(
-          (s) => s.id === payload.subscription_id
-        );
-        if (sub && sub.membership_plan) {
-          const startDate =
-            payload.paid_at?.slice(0, 10) ||
-            new Date().toISOString().slice(0, 10);
-          const endDate = new Date(startDate);
-          endDate.setDate(
-            endDate.getDate() + sub.membership_plan.duration_days
-          );
-          await fetch("/api/subscriptions", {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              id: sub.id,
-              status: "active",
-              start_date: startDate,
-              end_date: endDate.toISOString().slice(0, 10),
-            }),
-          });
-
-          await fetch("/api/qr-tokens", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              member_id: sub.member_id,
-              expires_at: endDate.toISOString(),
-            }),
-          });
-        }
-      }
-      setOpen(false);
-      setForm({
-        member_id: "",
-        subscription_id: "",
-        amount_cents: "",
-        method: "cash",
-        status: "paid",
-        paid_at: new Date().toISOString().slice(0, 10),
-        notes: "",
-      });
-      fetchPayments();
-      fetchStats();
-    } else {
-      alert("Failed to add payment");
-    }
-    setLoading(false);
+    addPaymentMutation.mutate(payload);
   };
 
   const getStatusBadge = (status: string) => {
@@ -292,7 +274,7 @@ export default function PaymentsPage() {
                       <SelectValue placeholder="Select member" />
                     </SelectTrigger>
                     <SelectContent>
-                      {members.map((m) => (
+                      {(members ?? []).map((m: Member) => (
                         <SelectItem key={m.id} value={m.id}>
                           {m.full_name}
                         </SelectItem>
@@ -486,48 +468,72 @@ export default function PaymentsPage() {
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Payments</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">
-              {stats.totalPayments}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Total payment transactions
-            </p>
-          </CardContent>
-        </Card>
+        {statsLoading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <Skeleton className="h-4 w-24 mb-2 bg-muted/30" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-20 mb-2 bg-muted/30" />
+                <Skeleton className="h-4 w-16 bg-muted/20" />
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total Payments
+                </CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-primary">
+                  {stats.totalPayments}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Total payment transactions
+                </p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatRupiah(stats.totalRevenue)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Total revenue received
-            </p>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total Revenue
+                </CardTitle>
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {formatRupiah(stats.totalRevenue)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Total revenue received
+                </p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Payments This Month</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-500">
-              {stats.monthlyPayments}
-            </div>
-            <p className="text-xs text-muted-foreground">Payments in current month</p>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Payments This Month
+                </CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-500">
+                  {stats.monthlyPayments}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Payments in current month
+                </p>
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
 
       {/* Payments Table */}
@@ -537,13 +543,37 @@ export default function PaymentsPage() {
           <CardDescription>Latest payment transactions</CardDescription>
         </CardHeader>
         <CardContent>
-          {payments.length === 0 ? (
+          {paymentsLoading ? (
+            <div className="space-y-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between p-4 bg-muted/50 rounded-lg"
+                >
+                  <div className="flex items-center gap-4">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div>
+                      <Skeleton className="h-4 w-32 mb-2" />
+                      <Skeleton className="h-3 w-24" />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <Skeleton className="h-4 w-20 mb-2" />
+                    <div className="flex flex-col gap-1">
+                      <Skeleton className="h-4 w-12" />
+                      <Skeleton className="h-4 w-12" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : paymentsData?.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground">No payments recorded yet</p>
             </div>
           ) : (
             <div className="space-y-4">
-              {payments.map((payment: any) => (
+              {paymentsData.map((payment: any) => (
                 <div
                   key={payment.id}
                   className="flex items-center justify-between p-4 bg-muted/50 rounded-lg"
