@@ -16,11 +16,11 @@ const qrOptions = [
     name: "David Wilson",
   },
   {
-    token: "qr_043ioujofkd9834b7d89733efbcfbab7dc2b4d2",
+    token: "qr_179b0040-ecc0-40b9-a70b-03b83bbefd92",
     name: "Muhammad Ihsan Sy",
   },
   {
-    token: "qr_c3cfd1b6-bc17-4b00-8c9c-baedc93159ac",
+    token: "qr_83fe50a4-f430-40b7-b485-8585f564d7d8",
     name: "Budi"
   }
 ];
