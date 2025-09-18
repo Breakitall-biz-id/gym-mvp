@@ -152,9 +152,7 @@ export default function LoginPage() {
           
           <div className="mt-6 text-center text-sm text-muted-foreground">
             <p>Demo accounts:</p>
-            <p>Admin: admin@example.com / Admin123!</p>
-            <p>Staff: staff@example.com / Staff123!</p>
-            <p>Member: member@example.com / Member123!</p>
+            <p>Admin: admin@example.com / Admin123</p>
           </div>
         </CardContent>
       </Card>
